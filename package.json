@@ -1,0 +1,23 @@
+{
+  "name": "hypercore-gateway",
+  "version": "0.0.1",
+  "description": "A gateway for interacting with hypercore-based structures",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "author": "Nicholas Baroni",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "hyperdrive": "^10.20.0",
+    "hyperspace": "^3.19.0",
+    "mime-types": "^2.1.30"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
