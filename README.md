@@ -1,5 +1,5 @@
-# hypercore-gateway
-Gateway for interacting with hypercore-based structures and web applications.
+# hyperdrive-gateway
+Gateway for loading [hyperdrive](https://hypercore-protocol.org/) websites.
 
 # Run
 
@@ -10,7 +10,7 @@ npm start
 
 ## Use
 
-To view a hyperdrive-distributed website, use this URL pattern:
+To view a hyperdrive website, use this URL pattern:
 
 ```
 http://localhost:8085/hyper/PUBLIC_KEY/FILE_PATH
