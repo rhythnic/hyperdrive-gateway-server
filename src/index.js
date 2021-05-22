@@ -1,29 +1,30 @@
-import http from 'http';
-import { setupHyperspace } from './lib/hyperspace.js';
-import { setupExpress } from './express-app.js';
+import http from 'http'
+import { setupHyperspace } from './lib/hyperspace.js'
+import { setupExpress } from './express-app.js'
 
-async function main() {
-  const hyperspace = await setupHyperspace();
+async function main () {
+  const hyperspace = await setupHyperspace()
+  const corestore = hyperspace.client.corestore()
 
   const expressApp = setupExpress({
-    coreStore: hyperspace.coreStore
-  });
+    corestore
+  })
 
-  const server = http.createServer(expressApp);
+  const server = http.createServer(expressApp)
 
   process.on('SIGINT', () => {
-    server.stop();
-    hyperspace.cleanup();
-    process.exit(0);
-  });
+    server.stop()
+    hyperspace.cleanup()
+    process.exit(0)
+  })
 
-  const PORT = 8085;
+  const PORT = 8085
   server.listen(PORT, () => {
     console.log(`listening on ${PORT}`)
-  });
+  })
 }
 
 main().catch(err => {
-  console.error(err);
-  process.exit(1);
+  console.error(err)
+  process.exit(1)
 })
