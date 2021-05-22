@@ -18,5 +18,5 @@ http://localhost:8085/hyper/PUBLIC_KEY/FILE_PATH
 
 ## Browser Extension
 
-The gateway has a [browser extension](https://github.com/rhythnic/hypercore-gateway-extension) that exposes a UI
+The gateway has a [browser extension](https://github.com/rhythnic/hyperdrive-gateway-extension) that exposes a UI
 for opening websites from a `hyper://` URL.

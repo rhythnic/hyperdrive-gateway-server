@@ -1,13 +1,12 @@
-import express from 'express';
-import { hypersite } from './lib/hypersite-middleware.js';
+import express from 'express'
+import { hyperdriveHttpGateway } from './lib/hyperdrive-http-gateway.js'
 
-export function setupExpress({ coreStore }) {
-  const app = express();
+export function setupExpress ({ corestore }) {
+  const app = express()
 
-  app.use(hypersite({
-    prefix: '/hyper',
-    coreStore
-  }));
+  app.use('/hyper', hyperdriveHttpGateway({
+    corestore
+  }))
 
-  return app;
+  return app
 }
