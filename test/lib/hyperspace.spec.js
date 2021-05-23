@@ -5,9 +5,14 @@ import { Client as HyperspaceClient } from 'hyperspace'
 import Hyperbee from 'hyperbee'
 import storage from 'random-access-memory'
 import { setupHyperspace } from '../../src/lib/hyperspace.js'
+import { mockConsoleLog } from '../helpers.js'
 
 describe('setupHyperspace', () => {
   const host = `hyperspace-${process.pid}`
+
+  beforeEach(() => {
+    mockConsoleLog()
+  })
 
   describe('client', () => {
     it('is an instance of HyperspaceClient', async () => {

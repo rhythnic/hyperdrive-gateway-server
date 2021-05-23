@@ -1,13 +1,13 @@
 /* eslint-env mocha */
 import assert from 'assert'
 import process from 'process'
-import Hyperdrive from 'hyperdrive'
 import storage from 'random-access-memory'
 import simple from 'simple-mock'
 import mime from 'mime-types'
 import { extname } from 'path'
 import { setupHyperspace } from '../../src/lib/hyperspace.js'
 import { hyperdriveHttpGateway } from '../../src/lib/hyperdrive-http-gateway.js'
+import { buildDrive, mockConsoleLog } from '../helpers.js'
 
 describe('gateway-middleware', () => {
   const baseUrl = '/hyper'
@@ -25,12 +25,9 @@ describe('gateway-middleware', () => {
       <script type="module" src="hyper://${moduleDriveKey}/index.js"></script>
     </body>`
 
-  async function buildDrive (corestore, filePath, content) {
-    const drive = new Hyperdrive(corestore)
-    await drive.promises.ready()
-    await drive.promises.writeFile(filePath, content)
-    return drive.key.toString('hex')
-  }
+  beforeEach(() => {
+    mockConsoleLog()
+  })
 
   before(async () => {
     const hyperspace = await setupHyperspace({
