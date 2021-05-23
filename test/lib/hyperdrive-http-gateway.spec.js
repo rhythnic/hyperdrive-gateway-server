@@ -5,8 +5,8 @@ import storage from 'random-access-memory'
 import simple from 'simple-mock'
 import mime from 'mime-types'
 import { extname } from 'path'
-import { setupHyperspace } from '../../src/lib/hyperspace.js'
-import { hyperdriveHttpGateway } from '../../src/lib/hyperdrive-http-gateway.js'
+import { setupHyperspace } from '../../lib/hyperspace.js'
+import { hyperdriveHttpGateway } from '../../lib/hyperdrive-http-gateway.js'
 import { buildDrive, mockConsoleLog } from '../helpers.js'
 
 describe('gateway-middleware', () => {

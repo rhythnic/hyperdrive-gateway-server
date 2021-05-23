@@ -4,7 +4,7 @@ import process from 'process'
 import { Client as HyperspaceClient } from 'hyperspace'
 import Hyperbee from 'hyperbee'
 import storage from 'random-access-memory'
-import { setupHyperspace } from '../../src/lib/hyperspace.js'
+import { setupHyperspace } from '../../lib/hyperspace.js'
 import { mockConsoleLog } from '../helpers.js'
 
 describe('setupHyperspace', () => {

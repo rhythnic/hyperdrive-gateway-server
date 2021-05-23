@@ -1,6 +1,6 @@
 import http from 'http'
 import { setupHyperspace } from './lib/hyperspace.js'
-import { setupExpress } from './express-app.js'
+import { setupExpress } from './lib/express-app.js'
 
 async function main () {
   const hyperspace = await setupHyperspace()

@@ -3,8 +3,8 @@ import assert from 'assert'
 import process from 'process'
 import storage from 'random-access-memory'
 import request from 'supertest'
-import { setupHyperspace } from '../src/lib/hyperspace.js'
-import { setupExpress } from '../src/express-app.js'
+import { setupHyperspace } from '../lib/hyperspace.js'
+import { setupExpress } from '../lib/express-app.js'
 import { buildDrive, mockConsoleLog } from './helpers.js'
 
 describe('express-app', () => {
