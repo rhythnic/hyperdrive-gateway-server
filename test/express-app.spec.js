@@ -26,7 +26,7 @@ describe('express-app', () => {
       })
       cleanup = hyperspace.cleanup
       const corestore = hyperspace.client.corestore()
-      app = setupExpress({ corestore })
+      app = setupExpress({ corestore, client: hyperspace.client })
       driveKey = await buildDrive(corestore, '/index.html', indexHtmlContent)
     })
 

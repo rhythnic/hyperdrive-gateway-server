@@ -9,13 +9,14 @@ import { setupHyperspace } from '../../lib/hyperspace.js'
 import { hyperdriveHttpGateway } from '../../lib/hyperdrive-http-gateway.js'
 import { buildDrive, mockConsoleLog } from '../helpers.js'
 
-describe('gateway-middleware', () => {
+describe('hyperdrive-http-gateway', () => {
   const baseUrl = '/hyper'
   const req = (opts) => ({ ...opts, baseUrl })
   let middleware
   let cleanup
   let mainDriveKey
   let moduleDriveKey
+  let next
 
   const jsModuleContent = 'console.log(\'TEST\')'
 
@@ -27,6 +28,7 @@ describe('gateway-middleware', () => {
 
   beforeEach(() => {
     mockConsoleLog()
+    next = simple.stub()
   })
 
   before(async () => {
@@ -36,7 +38,7 @@ describe('gateway-middleware', () => {
     })
     cleanup = hyperspace.cleanup
     const corestore = hyperspace.client.corestore()
-    middleware = hyperdriveHttpGateway({ corestore })
+    middleware = hyperdriveHttpGateway({ corestore, client: hyperspace.client })
     moduleDriveKey = await buildDrive(corestore, '/index.js', jsModuleContent)
     mainDriveKey = await buildDrive(corestore, '/index.html', indexHtmlContent(moduleDriveKey))
   })
@@ -49,7 +51,6 @@ describe('gateway-middleware', () => {
         '/foo',
         '/2304234203abcdef'
       ]
-      const next = simple.stub()
       const res = {}
       await Promise.all(nonGatewayUrls.map(url => middleware(req({ url }), res, next)))
       assert.strictEqual(next.callCount, nonGatewayUrls.length)
@@ -68,7 +69,7 @@ describe('gateway-middleware', () => {
 
     it('serves the file contents with `hyper://` links pointed to the gateway', async () => {
       const url = `/${mainDriveKey}/index.html`
-      await middleware(req({ url }), res)
+      await middleware(req({ url }), res, next)
       const linksReplacedContent = indexHtmlContent(moduleDriveKey).replace(
         /hyper:\/\/([^ ]+)/g,
         (_, publicKeyAndFilePath) => `${baseUrl}/${publicKeyAndFilePath}`
@@ -78,13 +79,13 @@ describe('gateway-middleware', () => {
 
     it('serves html with the appropriate content-type', async () => {
       const url = `/${mainDriveKey}/index.html`
-      await middleware(req({ url }), res)
+      await middleware(req({ url }), res, next)
       assert.deepStrictEqual(res.set.lastCall.args, ['Content-Type', mime.contentType(extname(url))])
     })
 
     it('serves js with the appropriate content-type', async () => {
       const url = `/${moduleDriveKey}/index.js`
-      await middleware(req({ url }), res)
+      await middleware(req({ url }), res, next)
       assert.deepStrictEqual(res.set.lastCall.args, ['Content-Type', mime.contentType(extname(url))])
     })
   })
