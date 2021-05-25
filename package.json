@@ -1,6 +1,6 @@
 {
   "name": "hyperdrive-gateway",
-  "version": "0.0.1",
+  "version": "v0.0.1-rc.1",
   "description": "A gateway for interacting with hyperdrive web applications",
   "main": "index.js",
   "type": "module",
