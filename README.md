@@ -13,7 +13,7 @@ npm start
 To view a hyperdrive website, use this URL pattern:
 
 ```
-http://localhost:8085/hyper/PUBLIC_KEY/FILE_PATH
+http://localhost:8080/hyper/PUBLIC_KEY/FILE_PATH
 ```
 
 ## Browser Extension
