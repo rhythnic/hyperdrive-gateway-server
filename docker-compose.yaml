@@ -16,6 +16,7 @@ services:
       - .:/app
       - hyperspace_storage:/hyperspace_storage
     environment:
+      APP_NAME: 'Hyperdrive Gateway'
       PORT: '8080'
       NODE_ENV: development
       HYPERSPACE_HOST: gateway

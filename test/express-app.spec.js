@@ -25,9 +25,8 @@ describe('express-app', () => {
         host: `hyperspace-${process.pid}`
       })
       cleanup = hyperspace.cleanup
-      const corestore = hyperspace.client.corestore()
-      app = setupExpress({ corestore, client: hyperspace.client })
-      driveKey = await buildDrive(corestore, '/index.html', indexHtmlContent)
+      app = setupExpress({ hyperspaceClient: hyperspace.client })
+      driveKey = await buildDrive(hyperspace.client, '/index.html', indexHtmlContent)
     })
 
     after(() => cleanup())

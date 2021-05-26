@@ -1,4 +1,5 @@
 import http from 'http'
+import process from 'process'
 import { setupHyperspace } from './lib/hyperspace.js'
 import { setupExpress } from './lib/express-app.js'
 
@@ -8,11 +9,11 @@ async function main () {
     storage: process.env.HYPERSPACE_STORAGE
   })
 
-  const corestore = hyperspace.client.corestore()
-
   const expressApp = setupExpress({
-    client: hyperspace.client,
-    corestore
+    hyperspaceClient: hyperspace.client,
+    viewData: {
+      appName: process.env.APP_NAME
+    }
   })
 
   const server = http.createServer(expressApp)

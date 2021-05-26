@@ -37,10 +37,9 @@ describe('hyperdrive-http-gateway', () => {
       host: `hyperspace-${process.pid}`
     })
     cleanup = hyperspace.cleanup
-    const corestore = hyperspace.client.corestore()
-    middleware = hyperdriveHttpGateway({ corestore, client: hyperspace.client })
-    moduleDriveKey = await buildDrive(corestore, '/index.js', jsModuleContent)
-    mainDriveKey = await buildDrive(corestore, '/index.html', indexHtmlContent(moduleDriveKey))
+    middleware = hyperdriveHttpGateway({ client: hyperspace.client })
+    moduleDriveKey = await buildDrive(hyperspace.client, '/index.js', jsModuleContent)
+    mainDriveKey = await buildDrive(hyperspace.client, '/index.html', indexHtmlContent(moduleDriveKey))
   })
 
   after(() => cleanup())
