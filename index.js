@@ -6,7 +6,11 @@ import { setupExpress } from './lib/express-app.js'
 async function main () {
   const hyperspace = await setupHyperspace({
     host: process.env.HYPERSPACE_HOST,
-    storage: process.env.HYPERSPACE_STORAGE
+    storage: process.env.HYPERSPACE_STORAGE,
+    noAnnounce: true,
+    network: {
+      ephemeral: false
+    }
   })
 
   const expressApp = setupExpress({

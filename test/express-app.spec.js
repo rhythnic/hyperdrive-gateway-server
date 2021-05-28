@@ -22,7 +22,11 @@ describe('express-app', () => {
     before(async () => {
       const hyperspace = await setupHyperspace({
         storage,
-        host: `hyperspace-${process.pid}`
+        host: `hyperspace-${process.pid}`,
+        noAnnounce: true,
+        network: {
+          ephemeral: true
+        }
       })
       cleanup = hyperspace.cleanup
       app = setupExpress({ hyperspaceClient: hyperspace.client })

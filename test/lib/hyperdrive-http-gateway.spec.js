@@ -34,7 +34,11 @@ describe('hyperdrive-http-gateway', () => {
   before(async () => {
     const hyperspace = await setupHyperspace({
       storage,
-      host: `hyperspace-${process.pid}`
+      host: `hyperspace-${process.pid}`,
+      noAnnounce: true,
+      network: {
+        ephemeral: true
+      }
     })
     cleanup = hyperspace.cleanup
     middleware = hyperdriveHttpGateway({ client: hyperspace.client })

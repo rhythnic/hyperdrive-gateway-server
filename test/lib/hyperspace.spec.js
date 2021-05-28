@@ -16,7 +16,14 @@ describe('setupHyperspace', () => {
 
   describe('client', () => {
     it('is an instance of HyperspaceClient', async () => {
-      const { client, cleanup } = await setupHyperspace({ storage, host })
+      const { client, cleanup } = await setupHyperspace({
+        storage,
+        host,
+        noAnnounce: true,
+        network: {
+          ephemeral: true
+        }
+      })
       assert(client instanceof HyperspaceClient)
       await cleanup()
     })
