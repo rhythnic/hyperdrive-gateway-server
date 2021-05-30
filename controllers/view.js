@@ -1,5 +1,5 @@
 import process from 'process'
-import * as Eta from "eta"
+import * as Eta from 'eta'
 import { join } from 'path'
 
 Eta.configure({
@@ -8,17 +8,17 @@ Eta.configure({
 })
 
 export class ViewController {
-  constructor(viewData) {
+  constructor (viewData) {
     this.viewData = viewData
   }
 
-  async handleRequest(req, res, url) {
+  async handleRequest (req, res, url) {
     if (req.method !== 'GET') return false
     await this.renderLandingPage(req, res, url)
     return true
   }
 
-  async renderLandingPage(req, res) {
+  async renderLandingPage (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.end(await Eta.renderFile('./landing.eta', this.viewData))

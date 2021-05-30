@@ -1,11 +1,10 @@
 /* eslint-env mocha */
 import assert from 'assert'
-import process from 'process'
-import storage from 'random-access-memory'
 import request from 'supertest'
-import { setupHyperspace } from '../lib/hyperspace.js'
-import { setupExpress } from '../lib/express-app.js'
-import { buildDrive, mockConsoleLog } from './helpers.js'
+import { setupHyperspace } from '../../lib/hyperspace.js'
+import { mainRequestHandlerFactory } from '../../lib/main-request-handler.js'
+import { buildDrive, mockConsoleLog, HYPERSPACE_OPTIONS } from '../helpers.js'
+import { HyperdriveController } from '../../controllers/hyperdrive.js'
 
 describe('express-app', () => {
   beforeEach(() => {
@@ -20,16 +19,12 @@ describe('express-app', () => {
     const indexHtmlContent = 'body><h1>Test</h1></body>'
 
     before(async () => {
-      const hyperspace = await setupHyperspace({
-        storage,
-        host: `hyperspace-${process.pid}`,
-        noAnnounce: true,
-        network: {
-          ephemeral: true
-        }
-      })
+      const hyperspace = await setupHyperspace(HYPERSPACE_OPTIONS)
       cleanup = hyperspace.cleanup
-      app = setupExpress({ hyperspaceClient: hyperspace.client })
+      const controllers = [
+        new HyperdriveController(hyperspace.client)
+      ]
+      app = mainRequestHandlerFactory(controllers)
       driveKey = await buildDrive(hyperspace.client, '/index.html', indexHtmlContent)
     })
 
