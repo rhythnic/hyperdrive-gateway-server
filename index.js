@@ -1,10 +1,12 @@
-import http from 'http'
+import { createSecureServer } from 'http2'
 import process from 'process'
+import { readFileSync } from 'fs'
 import { promisify } from 'util'
+import { join } from 'path'
 import { setupHyperspace } from './lib/hyperspace.js'
 import { HyperdriveController } from './controllers/hyperdrive.js'
 import { ViewController } from './controllers/view.js'
-import { mainRequestHandlerFactory } from './lib/main-request-handler.js'
+import { streamHandler } from './lib/stream-handler.js'
 
 async function main () {
   const hyperspace = await setupHyperspace({
@@ -21,7 +23,14 @@ async function main () {
     new ViewController({ appName: process.env.APP_NAME })
   ]
 
-  const server = http.createServer(mainRequestHandlerFactory(controllers))
+  const serverOptions = {
+    key: readFileSync(join(process.cwd(), 'dev-certs/server.key')),
+    cert: readFileSync(join(process.cwd(), 'dev-certs/server.crt'))
+  };
+
+  const server = createSecureServer(serverOptions)
+  server.on('error', (err) => console.error(err))
+  server.on('stream', streamHandler(controllers))
 
   const shutdown = () => 
     Promise.all([

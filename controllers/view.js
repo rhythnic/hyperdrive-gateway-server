@@ -12,15 +12,19 @@ export class ViewController {
     this.viewData = viewData
   }
 
-  async handleRequest (req, res, url) {
-    if (req.method !== 'GET') return false
-    await this.renderLandingPage(req, res, url)
+  async handleRequest (stream, headers) {
+    if (headers[':method'] !== 'GET') return false
+    await this.renderLandingPage(stream, headers)
     return true
   }
 
-  async renderLandingPage (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.end(await Eta.renderFile('./landing.eta', this.viewData))
+  async renderLandingPage (stream, headers) {
+    const body = await Eta.renderFile('./landing.eta', this.viewData)
+    stream.respond({
+      'content-length': Buffer.byteLength(body),
+      'content-type': 'text/html; charset=utf-8',
+      ':status': 200
+    })
+    stream.end(body)
   }
 }

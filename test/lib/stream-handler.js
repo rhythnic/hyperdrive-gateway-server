@@ -2,7 +2,7 @@
 import assert from 'assert'
 import request from 'supertest'
 import { setupHyperspace } from '../../lib/hyperspace.js'
-import { mainRequestHandlerFactory } from '../../lib/main-request-handler.js'
+import { streamHandler } from '../../lib/stream-handler.js'
 import { buildDrive, mockConsoleLog, HYPERSPACE_OPTIONS } from '../helpers.js'
 import { HyperdriveController } from '../../controllers/hyperdrive.js'
 
@@ -24,7 +24,7 @@ describe('express-app', () => {
       const controllers = [
         new HyperdriveController(hyperspace.client)
       ]
-      app = mainRequestHandlerFactory(controllers)
+      app = streamHandler(controllers)
       driveKey = await buildDrive(hyperspace.client, '/index.html', indexHtmlContent)
     })
 

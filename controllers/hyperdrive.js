@@ -16,18 +16,18 @@ export class HyperdriveController {
     this.client = client
   }
 
-  async handleRequest (req, res, url) {
-    if (req.method === 'GET') {
-      const match = new RegExp(GATEWAY_ROUTE_REGEX).exec(url.pathname)
+  async handleRequest (stream, headers) {
+    if (headers[':method'] === 'GET') {
+      const match = new RegExp(GATEWAY_ROUTE_REGEX).exec(headers[':path'])
       if (match) {
-        await this.serveHyperdriveFile(req, res, match, url)
+        await this.serveHyperdriveFile(stream, headers, match)
         return true
       }
     }
     return false
   }
 
-  async serveHyperdriveFile (req, res, params) {
+  async serveHyperdriveFile (stream, headers, params) {
     const basePath = params[1]
     const publicKey = params[2]
     const filePath = !params[3] || params[3] === '/' ? '/index.html' : params[3]
@@ -36,16 +36,21 @@ export class HyperdriveController {
       await drive.promises.ready()
       await this.client.network.configure(drive.discoveryKey, NETWORK_CONFIG)
       const body = await drive.promises.readFile(filePath, 'utf8')
-      const contentType = mime.contentType(extname(filePath))
-      if (contentType) res.setHeader('Content-Type', contentType)
-      res.statusCode = 200
-      res.end(body.replace(
+      stream.respond({
+        'content-length': Buffer.byteLength(body),
+        'content-type': mime.contentType(extname(filePath)) || 'text/plain; charset=utf-8',
+        ':status': 200
+      })
+      stream.end(body.replace(
         PAGE_DEPENDENCY_REGEX,
         (match, attr, publicKeyAndFilePath) => `${attr}="${basePath}/${publicKeyAndFilePath}"`
       ))
     } catch (error) {
-      res.statusCode = 404
-      res.end('File not found')
+      stream.respond({
+        'content-type': 'text/html; charset=utf-8',
+        ':status': 404
+      });
+      stream.end('<h1>Not found</h1>');
     }
   }
 }
