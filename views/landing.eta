@@ -1,3 +1,5 @@
+<% layout('./layouts/main') %>
+
 <style>
   header {
     text-align: center;
@@ -30,7 +32,7 @@
 </style>
 
 <header>
-  <h1>{{appName}}</h1>
+  <h1><%= it.appName %></h1>
   <span>
     A
     <a href="https://hypercore-protocol.org/">hyperdrive</a>

@@ -1,1 +1,9 @@
 node_modules
+
+dev-certs/rootCA.key
+dev-certs/rootCA.pem
+dev-certs/rootCA.srl
+dev-certs/server.crt
+dev-certs/server.csr
+dev-certs/server.key
+.DS_Store

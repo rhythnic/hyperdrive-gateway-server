@@ -1,28 +1,50 @@
-import http from 'http'
+import { createSecureServer } from 'http2'
 import process from 'process'
+import { readFileSync } from 'fs'
+import { promisify } from 'util'
+import { join } from 'path'
 import { setupHyperspace } from './lib/hyperspace.js'
-import { setupExpress } from './lib/express-app.js'
+import { HyperdriveController } from './controllers/hyperdrive.js'
+import { ViewController } from './controllers/view.js'
+import { streamHandler } from './lib/stream-handler.js'
 
 async function main () {
   const hyperspace = await setupHyperspace({
-    host: process.env.HYPERSPACE_HOST,
-    storage: process.env.HYPERSPACE_STORAGE
-  })
-
-  const expressApp = setupExpress({
-    hyperspaceClient: hyperspace.client,
-    viewData: {
-      appName: process.env.APP_NAME
+    host: `gateway-${process.pid}`,
+    storage: process.env.HYPERSPACE_STORAGE,
+    noAnnounce: true,
+    network: {
+      ephemeral: false
     }
   })
 
-  const server = http.createServer(expressApp)
+  const controllers = [
+    new HyperdriveController(hyperspace.client),
+    new ViewController({ appName: process.env.APP_NAME })
+  ]
 
-  process.on('SIGINT', () => {
-    server.stop()
-    hyperspace.cleanup()
-    process.exit(0)
-  })
+  const serverOptions = {
+    key: readFileSync(join(process.cwd(), 'dev-certs/server.key')),
+    cert: readFileSync(join(process.cwd(), 'dev-certs/server.crt'))
+  }
+
+  const server = createSecureServer(serverOptions)
+  server.on('error', (err) => console.error(err))
+  server.on('stream', streamHandler(controllers))
+
+  const shutdown = () =>
+    Promise.all([
+      promisify(server.close.bind(server)),
+      hyperspace.cleanup()
+    ])
+      .then(() => process.exit(0))
+      .catch(err => {
+        console.error(err)
+        process.exit(0)
+      })
+
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
 
   const { PORT = '8080' } = process.env
   server.listen(PORT, () => {

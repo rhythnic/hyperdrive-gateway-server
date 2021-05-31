@@ -1,0 +1,14 @@
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = req_distinguished_name
+
+[req_distinguished_name]
+C=US
+ST=WY
+L=Cheyenne
+O=HyperdriveGateway
+OU=Dev
+emailAddress=hello@example.com
+CN = hyperdrivegateway.dev
