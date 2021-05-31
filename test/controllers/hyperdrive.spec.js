@@ -2,7 +2,6 @@
 import assert from 'assert'
 import simple from 'simple-mock'
 import mime from 'mime-types'
-import { URL } from 'url'
 import { extname } from 'path'
 import { setupHyperspace } from '../../lib/hyperspace.js'
 import { HyperdriveController } from '../../controllers/hyperdrive.js'
@@ -14,7 +13,6 @@ describe('HyperdriveController', () => {
   let mainDriveKey
   let moduleDriveKey
 
-  const origin = 'http://test.com'
   const jsModuleContent = 'console.log(\'TEST\')'
 
   const indexHtmlContent = moduleDriveKey => `
@@ -39,8 +37,9 @@ describe('HyperdriveController', () => {
   describe('handleRequest', () => {
     describe('non-GET request', () => {
       it('returns false', async () => {
-        const req = { method: 'POST' }
-        assert.strictEqual(await controller.handleRequest(req), false)
+        const headers = { ':method': 'POST' }
+        const stream = {}
+        assert.strictEqual(await controller.handleRequest(stream, headers), false)
       })
     })
 
@@ -51,51 +50,50 @@ describe('HyperdriveController', () => {
             '/foo',
             '/2304234203abcdef'
           ]
-          await Promise.all(nonGatewayPaths.map(async pathname => {
-            const req = { method: 'GET' }
-            const res = {}
-            const url = new URL(pathname, origin)
-            const result = await controller.handleRequest(req, res, url)
+          const stream = {}
+          await Promise.all(nonGatewayPaths.map(async path => {
+            const headers = { ':method': 'POST', ':path': path }
+            const result = await controller.handleRequest(stream, headers)
             assert.strictEqual(result, false)
           }))
         })
       })
 
       describe('hyperdrive compatible urls', () => {
-        let req
-        let res
+        let stream
+        let headers
 
         beforeEach(() => {
-          req = { method: 'GET' }
-          res = { end: simple.stub(), setHeader: simple.stub() }
+          headers = { ':method': 'GET' }
+          stream = { end: simple.stub(), respond: simple.stub() }
         })
 
         it('sets statusCode to 200', async () => {
-          const url = new URL(`/hyper/${mainDriveKey}/index.html`, origin)
-          await controller.handleRequest(req, res, url)
-          assert.strictEqual(res.statusCode, 200)
+          headers[':path'] = `/hyper/${mainDriveKey}/index.html`
+          await controller.handleRequest(stream, headers)
+          const response = stream.respond.lastCall.args[0]
+          assert.strictEqual(response[':status'], 200)
         })
 
         it('serves the file contents with `hyper://` links pointed to the gateway', async () => {
-          const url = new URL(`/hyper/${mainDriveKey}/index.html`, origin)
-          await controller.handleRequest(req, res, url)
-          const linksReplacedContent = indexHtmlContent(moduleDriveKey).replace(
-            /hyper:\/\/([^ ]+)/g,
-            (_, publicKeyAndFilePath) => `/hyper/${publicKeyAndFilePath}`
-          )
-          assert.strictEqual(res.end.lastCall.args[0], linksReplacedContent)
+          headers[':path'] = `/hyper/${mainDriveKey}/index.html`
+          await controller.handleRequest(stream, headers)
+          const linksReplacedContent = HyperdriveController.replaceDependencyLinks('/hyper', indexHtmlContent(moduleDriveKey))
+          assert.strictEqual(stream.end.lastCall.args[0], linksReplacedContent)
         })
 
         it('serves html with the appropriate content-type', async () => {
-          const url = new URL(`/hyper/${mainDriveKey}/index.html`, origin)
-          await controller.handleRequest(req, res, url)
-          assert.deepStrictEqual(res.setHeader.lastCall.args, ['Content-Type', mime.contentType(extname(url.pathname))])
+          headers[':path'] = `/hyper/${mainDriveKey}/index.html`
+          await controller.handleRequest(stream, headers)
+          const response = stream.respond.lastCall.args[0]
+          assert.deepStrictEqual(response['content-type'], mime.contentType(extname(headers[':path'])))
         })
 
         it('serves js with the appropriate content-type', async () => {
-          const url = new URL(`/hyper/${moduleDriveKey}/index.js`, origin)
-          await controller.handleRequest(req, res, url)
-          assert.deepStrictEqual(res.setHeader.lastCall.args, ['Content-Type', mime.contentType(extname(url.pathname))])
+          headers[':path'] = `/hyper/${moduleDriveKey}/index.js`
+          await controller.handleRequest(stream, headers)
+          const response = stream.respond.lastCall.args[0]
+          assert.deepStrictEqual(response['content-type'], mime.contentType(extname(headers[':path'])))
         })
       })
     })

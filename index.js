@@ -26,22 +26,22 @@ async function main () {
   const serverOptions = {
     key: readFileSync(join(process.cwd(), 'dev-certs/server.key')),
     cert: readFileSync(join(process.cwd(), 'dev-certs/server.crt'))
-  };
+  }
 
   const server = createSecureServer(serverOptions)
   server.on('error', (err) => console.error(err))
   server.on('stream', streamHandler(controllers))
 
-  const shutdown = () => 
+  const shutdown = () =>
     Promise.all([
       promisify(server.close.bind(server)),
       hyperspace.cleanup()
     ])
-    .then(() => process.exit(0))
-    .catch(err => {
-      console.error(err)
-      process.exit(0)
-    })
+      .then(() => process.exit(0))
+      .catch(err => {
+        console.error(err)
+        process.exit(0)
+      })
 
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)

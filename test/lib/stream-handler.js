@@ -1,44 +1,51 @@
 /* eslint-env mocha */
 import assert from 'assert'
-import request from 'supertest'
-import { setupHyperspace } from '../../lib/hyperspace.js'
+import simple from 'simple-mock'
 import { streamHandler } from '../../lib/stream-handler.js'
-import { buildDrive, mockConsoleLog, HYPERSPACE_OPTIONS } from '../helpers.js'
-import { HyperdriveController } from '../../controllers/hyperdrive.js'
+import { mockConsoleLog } from '../helpers.js'
 
-describe('express-app', () => {
+describe('stream-handler', () => {
+  let controllers
+  let stream
+  let headers
+  let handleStream
+
   beforeEach(() => {
     mockConsoleLog()
+    controllers = [
+      { handleRequest: simple.stub() },
+      { handleRequest: simple.stub() }
+    ]
+    stream = { respond: simple.stub(), end: simple.stub() }
+    headers = {}
+    handleStream = streamHandler(controllers)
   })
 
-  describe('/hyper', () => {
-    let cleanup
-    let app
-    let driveKey
-
-    const indexHtmlContent = 'body><h1>Test</h1></body>'
-
-    before(async () => {
-      const hyperspace = await setupHyperspace(HYPERSPACE_OPTIONS)
-      cleanup = hyperspace.cleanup
-      const controllers = [
-        new HyperdriveController(hyperspace.client)
-      ]
-      app = streamHandler(controllers)
-      driveKey = await buildDrive(hyperspace.client, '/index.html', indexHtmlContent)
+  describe('request delegation', () => {
+    it('attempts to delegate the request to each controller', async () => {
+      controllers.forEach(x => x.handleRequest.resolveWith(false))
+      await handleStream(stream, headers)
+      assert(controllers.every(x => x.handleRequest.called))
     })
+    it('stops delegation once a controller#handleRequest returns true', async () => {
+      controllers[0].handleRequest.resolveWith(true)
+      await handleStream(stream, headers)
+      assert.strictEqual(controllers[1].handleRequest.called, false)
+    })
+    it('returns a 404 if no controller handles the request', async () => {
+      controllers.forEach(x => x.handleRequest.resolveWith(false))
+      await handleStream(stream, headers)
+      const response = stream.respond.lastCall.args[0]
+      assert.strictEqual(response[':status'], 404)
+    })
+  })
 
-    after(() => cleanup())
-
-    it('fetches a hyperdrive file', () => {
-      return request(app)
-        .get(`/hyper/${driveKey}/index.html`)
-        .set('Accept', 'text/html')
-        .expect('Content-Type', /text\/html/)
-        .expect(200)
-        .then(({ text }) => {
-          assert.strictEqual(text, indexHtmlContent)
-        })
+  describe('error handling', () => {
+    it('returns a 500 if a controller throws an error', async () => {
+      controllers[0].handleRequest.rejectWith(new Error('TEST'))
+      await handleStream(stream, headers)
+      const response = stream.respond.lastCall.args[0]
+      assert.strictEqual(response[':status'], 500)
     })
   })
 })

@@ -16,6 +16,13 @@ export class HyperdriveController {
     this.client = client
   }
 
+  static replaceDependencyLinks (basePath, content) {
+    return content.replace(
+      PAGE_DEPENDENCY_REGEX,
+      (match, attr, publicKeyAndFilePath) => `${attr}="${basePath}/${publicKeyAndFilePath}"`
+    )
+  }
+
   async handleRequest (stream, headers) {
     if (headers[':method'] === 'GET') {
       const match = new RegExp(GATEWAY_ROUTE_REGEX).exec(headers[':path'])
@@ -35,22 +42,20 @@ export class HyperdriveController {
       const drive = new Hyperdrive(this.client.corestore(), Buffer.from(publicKey, 'hex'))
       await drive.promises.ready()
       await this.client.network.configure(drive.discoveryKey, NETWORK_CONFIG)
-      const body = await drive.promises.readFile(filePath, 'utf8')
+      let body = await drive.promises.readFile(filePath, 'utf8')
+      body = this.constructor.replaceDependencyLinks(basePath, body)
       stream.respond({
         'content-length': Buffer.byteLength(body),
         'content-type': mime.contentType(extname(filePath)) || 'text/plain; charset=utf-8',
         ':status': 200
       })
-      stream.end(body.replace(
-        PAGE_DEPENDENCY_REGEX,
-        (match, attr, publicKeyAndFilePath) => `${attr}="${basePath}/${publicKeyAndFilePath}"`
-      ))
+      stream.end(body)
     } catch (error) {
       stream.respond({
         'content-type': 'text/html; charset=utf-8',
         ':status': 404
-      });
-      stream.end('<h1>Not found</h1>');
+      })
+      stream.end('<h1>Not found</h1>')
     }
   }
 }
