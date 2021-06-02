@@ -2,7 +2,6 @@ import { createSecureServer } from 'http2'
 import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
-import { join } from 'path'
 import { setupHyperspace } from './lib/hyperspace.js'
 import { HyperdriveController } from './controllers/hyperdrive.js'
 import { ViewController } from './controllers/view.js'
@@ -24,8 +23,8 @@ async function main () {
   ]
 
   const serverOptions = {
-    key: readFileSync(join(process.cwd(), 'dev-certs/server.key')),
-    cert: readFileSync(join(process.cwd(), 'dev-certs/server.crt'))
+    key: readFileSync(process.env.SSL_KEY),
+    cert: readFileSync(process.env.SSL_CERT)
   }
 
   const server = createSecureServer(serverOptions)

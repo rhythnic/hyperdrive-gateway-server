@@ -17,10 +17,12 @@ services:
       - hyperspace_storage:/hyperspace_storage
     environment:
       APP_NAME: 'Hyperdrive Gateway'
-      PORT: '8080'
-      NODE_ENV: development
       HYPERSPACE_STORAGE: /hyperspace_storage
-
+      NODE_ENV: development
+      PORT: '8080'      
+      SSL_KEY: /app/dev-certs/local-computer.key
+      SSL_CERT: /app/dev-certs/local-computer.crt
+      
 networks:
   hyperspace_gateway:
     name: hyperspace_gateway_net
