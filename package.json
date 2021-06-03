@@ -8,7 +8,9 @@
     "test": "standard && mocha --recursive",
     "standard": "standard",
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "build_ui": "snowpack build",
+    "watch_ui": "snowpack build --watch"
   },
   "repository": {
     "type": "git",
@@ -21,18 +23,22 @@
   },
   "homepage": "https://github.com/rhythnic/hyperdrive-gateway",
   "dependencies": {
-    "eta": "^1.12.1",
+    "base32-decode": "^1.0.0",
+    "base32-encode": "^1.2.0",
     "hyperbee": "^1.5.5",
     "hyperdrive": "^10.20.0",
     "hyperspace": "^3.19.0",
     "mime-types": "^2.1.30"
   },
   "devDependencies": {
+    "@shoelace-style/shoelace": "*",
+    "@snowpack/plugin-svelte": "^3.7.0",
     "mocha": "^8.4.0",
     "nodemon": "^2.0.7",
     "random-access-memory": "^3.1.2",
     "simple-mock": "^0.8.0",
+    "snowpack": "^3.5.4",
     "standard": "^16.0.3",
-    "supertest": "^6.1.3"
+    "svelte": "^3.38.2"
   }
 }

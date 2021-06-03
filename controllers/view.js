@@ -1,30 +1,41 @@
 import process from 'process'
-import * as Eta from 'eta'
-import { join } from 'path'
+import { join, extname } from 'path'
+import http2 from 'http2'
+import mime from 'mime-types'
 
-Eta.configure({
-  cache: true,
-  views: join(process.cwd(), 'views')
-})
+const {
+  HTTP2_HEADER_PATH,
+  HTTP2_HEADER_METHOD,
+  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR
+} = http2.constants;
+
+const PUBLIC_DIR = join(process.cwd(), 'public')
 
 export class ViewController {
-  constructor (viewData) {
-    this.viewData = viewData
-  }
-
-  async handleRequest (stream, headers) {
-    if (headers[':method'] !== 'GET') return false
-    await this.renderLandingPage(stream, headers)
+  handleRequest (stream, headers) {
+    if (headers[HTTP2_HEADER_METHOD] !== 'GET') return false
+    this.serveStaticAsset(stream, headers)
     return true
   }
 
-  async renderLandingPage (stream, headers) {
-    const body = await Eta.renderFile('./landing.eta', this.viewData)
-    stream.respond({
-      'content-length': Buffer.byteLength(body),
-      'content-type': 'text/html; charset=utf-8',
-      ':status': 200
-    })
-    stream.end(body)
+  serveStaticAsset(stream, headers) {
+    // if no file extension, serve index.html
+    const fileExtension = extname(headers[HTTP2_HEADER_PATH])
+    const filePath = fileExtension ? headers[HTTP2_HEADER_PATH] : '/index.html'
+
+    const onError = (err) => {
+      console.log(err)
+      stream.respond({
+        ':status': err.code === 'ENOENT' ? HTTP_STATUS_NOT_FOUND : HTTP_STATUS_INTERNAL_SERVER_ERROR
+      })
+      stream.end()
+    }
+
+    const responseHeaders = {
+      'content-type': mime.lookup(extname(filePath))
+    }
+
+    stream.respondWithFile(join(PUBLIC_DIR, filePath), responseHeaders, { onError })
   }
 }

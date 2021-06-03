@@ -19,7 +19,7 @@ async function main () {
 
   const controllers = [
     new HyperdriveController(hyperspace.client),
-    new ViewController({ appName: process.env.APP_NAME })
+    new ViewController()
   ]
 
   const serverOptions = {
@@ -45,7 +45,7 @@ async function main () {
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)
 
-  const { PORT = '8080' } = process.env
+  const { PORT = '443' } = process.env
   server.listen(PORT, () => {
     console.log(`listening on ${PORT}`)
   })
