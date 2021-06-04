@@ -3,7 +3,7 @@ import Hyperdrive from 'hyperdrive'
 import mime from 'mime-types'
 import { extname } from 'path'
 import base32Decode from 'base32-decode'
-import { hexToBase32 } from '../ui-spa/lib/hex-to-base32.js'
+import { hexToBase32 } from '../lib/hex-to-base32.js'
 
 const {
   HTTP2_HEADER_PATH,
