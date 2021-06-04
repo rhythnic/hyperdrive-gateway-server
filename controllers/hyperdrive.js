@@ -2,6 +2,7 @@ import http2 from 'http2'
 import Hyperdrive from 'hyperdrive'
 import mime from 'mime-types'
 import { extname } from 'path'
+import replaceStream from 'replacestream'
 import base32Decode from 'base32-decode'
 import { hexToBase32 } from '../lib/hex-to-base32.js'
 
@@ -14,7 +15,7 @@ const {
   HTTP_STATUS_MOVED_PERMANENTLY
 } = http2.constants;
 
-const PAGE_DEPENDENCY_REGEX = /(src|href)=["']hyper:\/\/([0-9a-fA-F]{64})(\/?.*)["']/g
+const HYPER_CODE_DEPENDENCY_REGEX = /(src|href)=["']hyper:\/\/([0-9a-fA-F]{64})(\/?.*)["']/g
 const PUBLIC_KEY_REGEX = /([0-9a-fA-F]{64})/
 const ROUTE_REGEX = /^(\/hyper)\/([0-9a-fA-F]{64})(\/?.*)$/
 
@@ -23,26 +24,38 @@ const NETWORK_CONFIG = {
   lookup: true
 }
 
+const CODE_DEPENDENCY_TRANSFORMER_CONFIG = {
+  maxMatchLen: 200
+}
+
 const BASE32_METHOD = 'Crockford'
+
+const CODE_EXTENSIONS = ['.html', '.js', '.css']
 
 export class HyperdriveController {
   constructor (client) {
     this.client = client
   }
 
-  static redirectRouteToSubdomain(stream, { scheme, origin, publicKey, filePath }) {
+  static redirectRouteToSubdomain(stream, headers, { publicKey, filePath }) {
+    const scheme = headers[HTTP2_HEADER_SCHEME]
+    const authority = headers[HTTP2_HEADER_AUTHORITY]
     stream.respond({
       ':status': HTTP_STATUS_MOVED_PERMANENTLY,
-      'Location' : `${scheme}://${hexToBase32(publicKey)}.${origin}${filePath}`
+      'Location' : `${scheme}://${hexToBase32(publicKey)}.${authority}${filePath}`
     })
     stream.end()
   }
 
-  static replaceDependencyLinks (headers, origin, content) {
+  static hyperCodeDependencyTransformer (headers) {
+    // support esm imports and dynamic imports
+    // support css imports
     const scheme = headers[HTTP2_HEADER_SCHEME]
-    return content.replace(
-      PAGE_DEPENDENCY_REGEX,
-      (match, attr, publicKey, filePath) => `${attr}="${scheme}://${hexToBase32(publicKey)}.${origin}${filePath}"`
+    const host = headers[HTTP2_HEADER_AUTHORITY].split('.').slice(1).join('.')
+    return replaceStream(
+      HYPER_CODE_DEPENDENCY_REGEX,
+      (match, attr, publicKey, filePath) => `${attr}="${scheme}://${hexToBase32(publicKey)}.${host}${filePath}"`,
+      CODE_DEPENDENCY_TRANSFORMER_CONFIG
     )
   }
 
@@ -50,19 +63,16 @@ export class HyperdriveController {
     if (headers[HTTP2_HEADER_METHOD] !== 'GET') return false;
     const authorityParts = headers[HTTP2_HEADER_AUTHORITY].split('.')
     if (authorityParts.length === 3) {
-      const origin = `${authorityParts[1]}.${authorityParts[2]}`
       const publicKeyBuffer = Buffer.from(base32Decode(authorityParts[0], BASE32_METHOD))
       if (PUBLIC_KEY_REGEX.test(publicKeyBuffer.toString('hex'))) {
-        await this.serveHyperdriveFile(stream, headers, { origin, publicKeyBuffer, filePath: headers[HTTP2_HEADER_PATH] })
+        await this.serveHyperdriveFile(stream, headers, { publicKeyBuffer, filePath: headers[HTTP2_HEADER_PATH] })
         return true
       }
     } else if (authorityParts.length === 2) {
       const origin = headers[HTTP2_HEADER_AUTHORITY]
       const routeMatch = new RegExp(ROUTE_REGEX).exec(headers[HTTP2_HEADER_PATH])
       if (routeMatch) {
-        this.constructor.redirectRouteToSubdomain(stream, {
-          origin,
-          scheme: headers[HTTP2_HEADER_SCHEME],
+        this.constructor.redirectRouteToSubdomain(stream, headers, {
           publicKey: routeMatch[2],
           filePath: routeMatch[3]
         })
@@ -72,22 +82,25 @@ export class HyperdriveController {
     return false
   }
 
-  async serveHyperdriveFile (stream, headers, { origin, publicKeyBuffer, filePath }) {
-    // https://docs.beakerbrowser.com/developers/frontends-.ui-folder
+  async serveHyperdriveFile (stream, headers, { publicKeyBuffer, filePath }) {
     filePath = !filePath || filePath === '/' ? '/index.html' : filePath
+    const ext = extname(filePath)
     try {
       const drive = new Hyperdrive(this.client.corestore(), publicKeyBuffer)
       await drive.promises.ready()
       await this.client.network.configure(drive.discoveryKey, NETWORK_CONFIG)
-      let body = await drive.promises.readFile(filePath, 'utf8')
-      body = this.constructor.replaceDependencyLinks(headers, origin, body)
+      const stat = await drive.promises.stat(filePath)
       stream.respond({
-        'content-length': Buffer.byteLength(body),
+        'content-length': stat.size,
         'content-type': mime.contentType(extname(filePath)) || 'text/plain; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
         ':status': 200
       })
-      stream.end(body)
+      let res = drive.createReadStream(filePath)
+      if (CODE_EXTENSIONS.includes(ext)) {
+        res = res.pipe(this.constructor.hyperCodeDependencyTransformer(headers))
+      }
+      res.pipe(stream)
     } catch (error) {
       console.error(error)
       stream.respond({

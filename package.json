@@ -28,7 +28,8 @@
     "hyperbee": "^1.5.5",
     "hyperdrive": "^10.20.0",
     "hyperspace": "^3.19.0",
-    "mime-types": "^2.1.30"
+    "mime-types": "^2.1.30",
+    "replacestream": "^4.0.3"
   },
   "devDependencies": {
     "mocha": "^8.4.0",
