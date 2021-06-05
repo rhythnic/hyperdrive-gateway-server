@@ -2,13 +2,13 @@ import { createSecureServer } from 'http2'
 import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
-import { setupHyperspace } from './lib/hyperspace.js'
-import { HyperdriveController } from './controllers/hyperdrive.js'
-import { ViewController } from './controllers/view.js'
-import { streamHandler } from './lib/stream-handler.js'
+import { GatewayHyperspace } from './services/gateway-hyperspace.js'
+import { HyperdriveController } from './infra/controllers/hyperdrive.js'
+import { ViewController } from './infra/controllers/view.js'
+import { Router } from './infra/router.js'
 
 async function main () {
-  const hyperspace = await setupHyperspace({
+  const hyperspace = new GatewayHyperspace({
     host: `gateway-${process.pid}`,
     storage: process.env.HYPERSPACE_STORAGE,
     noAnnounce: true,
@@ -17,10 +17,12 @@ async function main () {
     }
   })
 
-  const controllers = [
+  await hyperspace.setup()
+
+  const router = new Router([
     new HyperdriveController(hyperspace.client),
     new ViewController()
-  ]
+  ])
 
   const serverOptions = {
     key: readFileSync(process.env.SSL_KEY),
@@ -29,7 +31,7 @@ async function main () {
 
   const server = createSecureServer(serverOptions)
   server.on('error', (err) => console.error(err))
-  server.on('stream', streamHandler(controllers))
+  server.on('stream', router.handleRequest)
 
   const shutdown = () =>
     Promise.all([

@@ -1,6 +1,6 @@
 import process from 'process'
 import { join, extname } from 'path'
-import http2 from 'http2'
+import { constants as http2Constants } from 'http2'
 import mime from 'mime-types'
 
 const {
@@ -8,7 +8,7 @@ const {
   HTTP2_HEADER_METHOD,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
-} = http2.constants;
+} = http2Constants;
 
 const PUBLIC_DIR = join(process.cwd(), 'public')
 
@@ -20,9 +20,8 @@ export class ViewController {
   }
 
   serveStaticAsset(stream, headers) {
-    // if no file extension, serve index.html
-    const fileExtension = extname(headers[HTTP2_HEADER_PATH])
-    const filePath = fileExtension ? headers[HTTP2_HEADER_PATH] : '/index.html'
+    const extension = extname(headers[HTTP2_HEADER_PATH])
+    const name = extension ? headers[HTTP2_HEADER_PATH] : '/index.html'
 
     const onError = (err) => {
       console.log(err)
@@ -33,9 +32,9 @@ export class ViewController {
     }
 
     const responseHeaders = {
-      'content-type': mime.lookup(extname(filePath))
+      'content-type': mime.lookup(extname(name))
     }
 
-    stream.respondWithFile(join(PUBLIC_DIR, filePath), responseHeaders, { onError })
+    stream.respondWithFile(join(PUBLIC_DIR, name), responseHeaders, { onError })
   }
 }
