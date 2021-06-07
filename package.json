@@ -1,6 +1,6 @@
 {
   "name": "hyperdrive-gateway",
-  "version": "v0.0.1-rc.2",
+  "version": "v0.0.1-rc.3",
   "description": "A gateway for interacting with hyperdrive web applications",
   "main": "index.js",
   "type": "module",
@@ -8,9 +8,7 @@
     "test": "standard && mocha --recursive",
     "standard": "standard",
     "dev": "nodemon index.js",
-    "start": "node index.js",
-    "build": "snowpack build",
-    "watch_ui": "snowpack build --watch"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
