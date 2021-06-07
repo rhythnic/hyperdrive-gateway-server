@@ -3,7 +3,7 @@ import { constants as http2Constants } from 'http2'
 const {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
-} = http2Constants;
+} = http2Constants
 
 export class Router {
   constructor (controllers) {
@@ -28,4 +28,3 @@ export class Router {
     }
   }
 }
-

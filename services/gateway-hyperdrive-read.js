@@ -1,12 +1,12 @@
 import Hyperdrive from 'hyperdrive'
 import { extname } from 'path'
 import replaceStream from 'replacestream'
-import { hexToBase32, base32ToBuffer } from '../lib/hex-to-base32.js'
+import { hexToBase32, base32ToBuffer, BASE32_PATTERN } from '../lib/base32.js'
 
 export const PUBLIC_KEY_PATTERN = '([0-9a-f]{64})' // using \d does not work
-const PUBLIC_KEY_REGEX = new RegExp(PUBLIC_KEY_PATTERN, 'i')
-const HYPER_URL_REGEX = new RegExp(`([^>])hyper://${PUBLIC_KEY_PATTERN}`, 'gi')
-const BASE32_KEY_REGEX = new RegExp('[0-9ABCDEFGHJKMNPQRSTVWXYZ]{52}', 'i')
+export const HYPER_URL_PATTERN = `([^>])hyper://${PUBLIC_KEY_PATTERN}`
+const HYPER_URL_REGEX = new RegExp(HYPER_URL_PATTERN, 'gi')
+const BASE32_KEY_REGEX = new RegExp(`^${BASE32_PATTERN}{52}$`, 'i')
 
 const WEB_APP_CODE_EXTENSIONS = ['.html', '.js', '.css']
 
@@ -29,7 +29,7 @@ export class GatewayHyperdriveRead {
     return hexToBase32(key)
   }
 
-  static base32KeyIsValid(key) {
+  static base32KeyIsValid (key) {
     return BASE32_KEY_REGEX.test(key)
   }
 
@@ -50,34 +50,30 @@ export class GatewayHyperdriveRead {
     this.drive = new Hyperdrive(client.corestore(), this.keyBuffer)
   }
 
-  keyIsValid () {
-    return PUBLIC_KEY_REGEX.test(this.publicKeyBuffer.toString('hex'))
-  }
-
   async ready () {
     await this.drive.promises.ready()
     await this.client.network.configure(this.drive.discoveryKey, LOOKUP_CONFIG)
   }
 
-  async resolveStat() {
+  async resolveFile () {
     try {
       const stat = await this.drive.promises.stat(this.name)
       return stat
     } catch (error) {
       if (error.code !== 'ENOENT' || extname(this.name)) throw error
       this.name = '/index.html'
-      return this.resolveStat()
+      return this.resolveFile()
     }
   }
 
   createReadStream (scheme, host) {
-    let stream = this.drive.createReadStream(this.name)
+    const stream = this.drive.createReadStream(this.name)
     return WEB_APP_CODE_EXTENSIONS.includes(extname(this.name))
       ? stream.pipe(this.constructor.hyperUrlTransformer(scheme, host))
       : stream
   }
 
   destroy () {
-    return this.client.network.configure(drive.discoveryKey, FORGET_CONFIG)
+    return this.client.network.configure(this.drive.discoveryKey, FORGET_CONFIG)
   }
 }

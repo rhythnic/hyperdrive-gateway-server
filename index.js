@@ -2,10 +2,13 @@ import { createSecureServer } from 'http2'
 import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
+import { join } from 'path'
 import { GatewayHyperspace } from './services/gateway-hyperspace.js'
 import { HyperdriveController } from './infra/controllers/hyperdrive.js'
 import { ViewController } from './infra/controllers/view.js'
 import { Router } from './infra/router.js'
+
+const PUBLIC_DIR = join(process.cwd(), 'public')
 
 async function main () {
   const hyperspace = new GatewayHyperspace({
@@ -21,7 +24,7 @@ async function main () {
 
   const router = new Router([
     new HyperdriveController(hyperspace.client),
-    new ViewController()
+    new ViewController(PUBLIC_DIR)
   ])
 
   const serverOptions = {

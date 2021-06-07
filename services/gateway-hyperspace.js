@@ -4,12 +4,12 @@ import {
 } from 'hyperspace'
 
 export class GatewayHyperspace {
-  constructor(opts = {}) {
+  constructor (opts = {}) {
     this.opts = opts
     this.client = null
     this.server = null
   }
-  
+
   async setup () {
     const clientOpts = { host: this.opts.host }
     try {
@@ -25,7 +25,7 @@ export class GatewayHyperspace {
   }
 
   async cleanup () {
-    await client.close()
+    await this.client.close()
     if (this.server) {
       console.log('Shutting down Hyperspace, this may take a few seconds...')
       await this.server.stop()
