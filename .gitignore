@@ -1,4 +1,3 @@
 node_modules
 .DS_Store
-dev-certs/local-computer.crt
-dev-certs/local-computer.key
+dev-certs

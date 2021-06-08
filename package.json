@@ -1,7 +1,7 @@
 {
-  "name": "hyperdrive-gateway",
+  "name": "hyperdrive-gateway-server",
   "version": "v0.0.1-rc.3",
-  "description": "A gateway for interacting with hyperdrive web applications",
+  "description": "A gateway server for interacting with hyperdrive web applications",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rhythnic/hyperdrive-gateway.git"
+    "url": "https://github.com/rhythnic/hyperdrive-gateway-server.git"
   },
   "author": "Nicholas Baroni (@rhythnic)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rhythnic/hyperdrive-gateway/issues"
+    "url": "https://github.com/rhythnic/hyperdrive-gateway-server/issues"
   },
-  "homepage": "https://github.com/rhythnic/hyperdrive-gateway",
+  "homepage": "https://github.com/rhythnic/hyperdrive-gateway-server",
   "dependencies": {
     "base32-decode": "^1.0.0",
     "base32-encode": "^1.2.0",
