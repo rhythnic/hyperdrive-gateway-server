@@ -8,8 +8,6 @@ import { HyperdriveController } from './infra/controllers/hyperdrive.js'
 import { ViewController } from './infra/controllers/view.js'
 import { Router } from './infra/router.js'
 
-const PUBLIC_DIR = join(process.cwd(), 'public')
-
 async function main () {
   const hyperspace = new GatewayHyperspace({
     host: `gateway-${process.pid}`,
@@ -24,7 +22,7 @@ async function main () {
 
   const router = new Router([
     new HyperdriveController(hyperspace.client),
-    new ViewController(PUBLIC_DIR)
+    new ViewController(process.env.PUBLIC_ASSETS_DIRECTORY)
   ])
 
   const serverOptions = {

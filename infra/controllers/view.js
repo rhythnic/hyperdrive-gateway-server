@@ -1,5 +1,6 @@
 import { join, extname } from 'path'
 import { constants as http2Constants } from 'http2'
+import { access as fsAccess, constants as fsConstants } from 'fs'
 import mime from 'mime-types'
 
 const {
@@ -10,12 +11,25 @@ const {
 } = http2Constants
 
 export class ViewController {
-  constructor (publicDir) {
-    this.publicDir = publicDir
+  constructor (staticDir) {
+    this.staticDir = staticDir
+    this.canServeStatic = false
+    this.initialize()
+  }
+
+  initialize() {
+    if (!this.staticDir) return
+    fsAccess(this.staticDir, fsConstants.R_OK, err => {
+      if (err) {
+        console.error('ViewController not able to serve static assets', err)
+        process.exit(1)
+      }
+      this.canServeStatic = true
+    })
   }
 
   handleRequest (stream, headers) {
-    if (headers[HTTP2_HEADER_METHOD] !== 'GET') return false
+    if (headers[HTTP2_HEADER_METHOD] !== 'GET' || !this.canServeStatic) return false
     this.serveStaticAsset(stream, headers)
     return true
   }
@@ -36,6 +50,6 @@ export class ViewController {
       'content-type': mime.lookup(extname(name))
     }
 
-    stream.respondWithFile(join(this.publicDir, name), responseHeaders, { onError })
+    stream.respondWithFile(join(this.staticDir, name), responseHeaders, { onError })
   }
 }
