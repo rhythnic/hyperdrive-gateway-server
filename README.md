@@ -1,22 +1,9 @@
-# hyperdrive-gateway
-Gateway for loading [hyperdrive](https://hypercore-protocol.org/) websites.
+# hyperdrive-gateway-server
+Gateway for viewing [hyperdrive][hypercore-protocol] websites.
 
-# Run
+## Hyperdrive Gateway
+See the [Hyperdrive Gateway][hyperdrive-gateway]
+repository for more information and documentation for running locally.
 
-```
-npm install
-npm start
-```
-
-## Use
-
-To view a hyperdrive website, use this URL pattern:
-
-```
-http://localhost:8080/hyper/PUBLIC_KEY/FILE_PATH
-```
-
-## Browser Extension
-
-The gateway has a [browser extension](https://github.com/rhythnic/hyperdrive-gateway-extension) that exposes a UI
-for opening websites from a `hyper://` URL.
+[hyperdrive-gateway]: https://github.com/rhythnic/hyperdrive-gateway
+[hypercore-protocol]: https://hypercore-protocol.org

@@ -16,7 +16,7 @@ export async function buildDrive (client, filePath, content) {
   const drive = new Hyperdrive(client.corestore())
   await drive.promises.ready()
   await drive.promises.writeFile(filePath, content)
-  return drive.key.toString('hex')
+  return drive
 }
 
 export function mockConsoleLog () {

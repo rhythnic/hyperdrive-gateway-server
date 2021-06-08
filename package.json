@@ -1,7 +1,7 @@
 {
-  "name": "hyperdrive-gateway",
-  "version": "v0.0.1-rc.2",
-  "description": "A gateway for interacting with hyperdrive web applications",
+  "name": "hyperdrive-gateway-server",
+  "version": "v0.0.1-rc.3",
+  "description": "A gateway server for interacting with hyperdrive web applications",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -12,27 +12,30 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rhythnic/hyperdrive-gateway.git"
+    "url": "https://github.com/rhythnic/hyperdrive-gateway-server.git"
   },
   "author": "Nicholas Baroni (@rhythnic)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rhythnic/hyperdrive-gateway/issues"
+    "url": "https://github.com/rhythnic/hyperdrive-gateway-server/issues"
   },
-  "homepage": "https://github.com/rhythnic/hyperdrive-gateway",
+  "homepage": "https://github.com/rhythnic/hyperdrive-gateway-server",
   "dependencies": {
-    "eta": "^1.12.1",
+    "base32-decode": "^1.0.0",
+    "base32-encode": "^1.2.0",
     "hyperbee": "^1.5.5",
     "hyperdrive": "^10.20.0",
     "hyperspace": "^3.19.0",
-    "mime-types": "^2.1.30"
+    "mime-types": "^2.1.30",
+    "replacestream": "^4.0.3"
   },
   "devDependencies": {
     "mocha": "^8.4.0",
     "nodemon": "^2.0.7",
     "random-access-memory": "^3.1.2",
+    "raw-body": "^2.4.1",
     "simple-mock": "^0.8.0",
     "standard": "^16.0.3",
-    "supertest": "^6.1.3"
+    "stream-mock": "^2.0.5"
   }
 }

@@ -3,13 +3,15 @@ import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
 import { join } from 'path'
-import { setupHyperspace } from './lib/hyperspace.js'
-import { HyperdriveController } from './controllers/hyperdrive.js'
-import { ViewController } from './controllers/view.js'
-import { streamHandler } from './lib/stream-handler.js'
+import { GatewayHyperspace } from './services/gateway-hyperspace.js'
+import { HyperdriveController } from './infra/controllers/hyperdrive.js'
+import { ViewController } from './infra/controllers/view.js'
+import { Router } from './infra/router.js'
+
+const PUBLIC_DIR = join(process.cwd(), 'public')
 
 async function main () {
-  const hyperspace = await setupHyperspace({
+  const hyperspace = new GatewayHyperspace({
     host: `gateway-${process.pid}`,
     storage: process.env.HYPERSPACE_STORAGE,
     noAnnounce: true,
@@ -18,19 +20,21 @@ async function main () {
     }
   })
 
-  const controllers = [
+  await hyperspace.setup()
+
+  const router = new Router([
     new HyperdriveController(hyperspace.client),
-    new ViewController({ appName: process.env.APP_NAME })
-  ]
+    new ViewController(PUBLIC_DIR)
+  ])
 
   const serverOptions = {
-    key: readFileSync(join(process.cwd(), 'dev-certs/server.key')),
-    cert: readFileSync(join(process.cwd(), 'dev-certs/server.crt'))
+    key: readFileSync(process.env.SSL_KEY),
+    cert: readFileSync(process.env.SSL_CERT)
   }
 
   const server = createSecureServer(serverOptions)
   server.on('error', (err) => console.error(err))
-  server.on('stream', streamHandler(controllers))
+  server.on('stream', router.handleRequest)
 
   const shutdown = () =>
     Promise.all([
@@ -46,7 +50,7 @@ async function main () {
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)
 
-  const { PORT = '8080' } = process.env
+  const { PORT = '443' } = process.env
   server.listen(PORT, () => {
     console.log(`listening on ${PORT}`)
   })
