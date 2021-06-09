@@ -27,6 +27,7 @@
     "hyperdrive": "^10.20.0",
     "hyperspace": "^3.19.0",
     "mime-types": "^2.1.30",
+    "quick-lru": "^6.0.0",
     "replacestream": "^4.0.3"
   },
   "devDependencies": {

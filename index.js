@@ -2,7 +2,6 @@ import { createSecureServer } from 'http2'
 import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
-import { join } from 'path'
 import { GatewayHyperspace } from './services/gateway-hyperspace.js'
 import { HyperdriveController } from './infra/controllers/hyperdrive.js'
 import { ViewController } from './infra/controllers/view.js'
@@ -21,9 +20,11 @@ async function main () {
   await hyperspace.setup()
 
   const router = new Router([
-    new HyperdriveController(hyperspace.client),
+    new HyperdriveController({ client: hyperspace.client }),
     new ViewController(process.env.PUBLIC_ASSETS_DIRECTORY)
   ])
+
+  await router.initialize()
 
   const serverOptions = {
     key: readFileSync(process.env.SSL_KEY),

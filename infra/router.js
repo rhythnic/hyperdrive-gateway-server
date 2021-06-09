@@ -11,6 +11,13 @@ export class Router {
     this.handleRequest = this.handleRequest.bind(this)
   }
 
+  initialize () {
+    return Promise.all(this.controllers.map(async controller => {
+      if (typeof controller.initialize !== 'function') return
+      await controller.initialize()
+    }))
+  }
+
   async handleRequest (stream, headers) {
     try {
       let handled = false

@@ -1,6 +1,7 @@
 import { join, extname } from 'path'
 import { constants as http2Constants } from 'http2'
-import { access as fsAccess, constants as fsConstants } from 'fs'
+import { constants as fsConstants } from 'fs'
+import { access as fsAccess } from 'fs/promises'
 import mime from 'mime-types'
 
 const {
@@ -14,18 +15,12 @@ export class ViewController {
   constructor (staticDir) {
     this.staticDir = staticDir
     this.canServeStatic = false
-    this.initialize()
   }
 
-  initialize() {
+  async initialize () {
     if (!this.staticDir) return
-    fsAccess(this.staticDir, fsConstants.R_OK, err => {
-      if (err) {
-        console.error('ViewController not able to serve static assets', err)
-        process.exit(1)
-      }
-      this.canServeStatic = true
-    })
+    await fsAccess(this.staticDir, fsConstants.R_OK)
+    this.canServeStatic = true
   }
 
   handleRequest (stream, headers) {

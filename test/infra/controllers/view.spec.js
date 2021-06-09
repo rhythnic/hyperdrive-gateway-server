@@ -4,6 +4,7 @@ import { constants as http2Constants } from 'http2'
 import simple from 'simple-mock'
 import mime from 'mime-types'
 import { extname } from 'path'
+import { tmpdir } from 'os'
 import { ViewController } from '../../../infra/controllers/view.js'
 import { mockConsoleLog } from '../../helpers.js'
 
@@ -16,11 +17,12 @@ const {
 
 describe('ViewController', () => {
   let controller
-  const publicDir = '/PUBLIC'
+  const publicDir = tmpdir()
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockConsoleLog()
     controller = new ViewController(publicDir)
+    await controller.initialize()
   })
 
   describe('handleRequest', () => {
