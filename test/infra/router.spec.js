@@ -22,6 +22,14 @@ describe('Router', () => {
       router = new Router(controllers)
     })
 
+    describe('initialize', () => {
+      it('initializes each controller with an initialize method', async () => {
+        controllers[0].initialize = simple.stub()
+        await router.initialize()
+        assert(controllers[0].initialize.called)
+      })
+    })
+
     describe('request delegation', () => {
       it('attempts to delegate the request to each controller', async () => {
         controllers.forEach(x => x.handleRequest.resolveWith(false))

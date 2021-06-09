@@ -24,7 +24,7 @@ const FORGET_CONFIG = {
   lookup: false
 }
 
-export class GatewayHyperdriveRead {
+export class GatewayHyperdrive {
   static toBase32 (key) {
     return hexToBase32(key)
   }
@@ -34,7 +34,6 @@ export class GatewayHyperdriveRead {
   }
 
   static hyperUrlTransformer (scheme, host) {
-    // const scheme = headers[HTTP2_HEADER_SCHEME]
     return replaceStream(
       HYPER_URL_REGEX,
       (_, preceedingChar, key) => `${preceedingChar}${scheme}://${this.toBase32(key)}.${host}`,
@@ -42,12 +41,10 @@ export class GatewayHyperdriveRead {
     )
   }
 
-  constructor (client, base32Key, name) {
+  constructor (client, base32Key) {
     this.client = client
-    this.base32Key = base32Key
-    this.keyBuffer = base32ToBuffer(base32Key)
-    this.name = !name || name === '/' ? '/index.html' : name
-    this.drive = new Hyperdrive(client.corestore(), this.keyBuffer)
+    this.drive = new Hyperdrive(client.corestore(), base32ToBuffer(base32Key))
+    this.lastReadTime = 0
   }
 
   async ready () {
@@ -55,25 +52,29 @@ export class GatewayHyperdriveRead {
     await this.client.network.configure(this.drive.discoveryKey, LOOKUP_CONFIG)
   }
 
-  async resolveFile () {
+  async resolveFile (name) {
+    name = !name || name === '/' ? '/index.html' : name
     try {
-      const stat = await this.drive.promises.stat(this.name)
-      return stat
+      const stat = await this.drive.promises.stat(name)
+      return { name, stat }
     } catch (error) {
-      if (error.code !== 'ENOENT' || extname(this.name)) throw error
-      this.name = '/index.html'
-      return this.resolveFile()
+      if (error.code !== 'ENOENT' || extname(name)) throw error
+      return this.resolveFile('/index.html')
     }
   }
 
-  createReadStream (scheme, host) {
-    const stream = this.drive.createReadStream(this.name)
-    return WEB_APP_CODE_EXTENSIONS.includes(extname(this.name))
-      ? stream.pipe(this.constructor.hyperUrlTransformer(scheme, host))
-      : stream
+  createReadStream (name, scheme, host) {
+    this.lastReadTime = Date.now()
+    const stream = this.drive.createReadStream(name)
+    if (!WEB_APP_CODE_EXTENSIONS.includes(extname(name))) return stream
+    if (!(scheme && host)) {
+      throw new Error('createReadStream requires a scheme and host for .html .js and .css files')
+    }
+    return stream.pipe(this.constructor.hyperUrlTransformer(scheme, host))
   }
 
   destroy () {
+    // Todo: remove hyperdrive from storage
     return this.client.network.configure(this.drive.discoveryKey, FORGET_CONFIG)
   }
 }

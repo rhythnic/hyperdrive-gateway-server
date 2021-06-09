@@ -1,7 +1,8 @@
 import { constants as http2Constants } from 'http2'
 import mime from 'mime-types'
 import { extname } from 'path'
-import { GatewayHyperdriveRead, PUBLIC_KEY_PATTERN } from '../../services/gateway-hyperdrive-read.js'
+import QuickLRU from 'quick-lru'
+import { GatewayHyperdrive, PUBLIC_KEY_PATTERN } from '../../services/gateway-hyperdrive.js'
 
 const {
   HTTP2_HEADER_PATH,
@@ -37,20 +38,33 @@ export class HyperdriveController {
     const authority = headers[HTTP2_HEADER_AUTHORITY]
     stream.respond({
       ':status': HTTP_STATUS_MOVED_PERMANENTLY,
-      Location: `${scheme}://${GatewayHyperdriveRead.toBase32(key)}.${authority}${name}`
+      Location: `${scheme}://${GatewayHyperdrive.toBase32(key)}.${authority}${name}`
     })
     stream.end()
   }
 
-  constructor (client) {
-    this.client = client
+  constructor (opts) {
+    this.client = opts.client
+    this.cache = new QuickLRU({
+      maxSize: opts.cacheSize || 500,
+      onEviction: (_, drive) => {
+        drive.destroy().catch(err => console.error(err))
+      }
+    })
+  }
+
+  cachedDrive (subdomain) {
+    if (!this.cache.has(subdomain)) {
+      this.cache.set(subdomain, new GatewayHyperdrive(this.client, subdomain))
+    }
+    return this.cache.get(subdomain)
   }
 
   async handleRequest (stream, headers) {
     if (headers[HTTP2_HEADER_METHOD] !== 'GET') return false
     const authorityParts = headers[HTTP2_HEADER_AUTHORITY].split('.')
     const subdomain = authorityParts.length === 3 && authorityParts[0]
-    if (subdomain && GatewayHyperdriveRead.base32KeyIsValid(subdomain)) {
+    if (subdomain && GatewayHyperdrive.base32KeyIsValid(subdomain)) {
       const domainHost = `${authorityParts[1]}.${authorityParts[2]}`
       await this.serveHyperdriveFile(stream, headers, subdomain, domainHost)
       return true
@@ -62,13 +76,12 @@ export class HyperdriveController {
   }
 
   async serveHyperdriveFile (stream, headers, subdomain, domainHost) {
-    let driveRead
     try {
-      driveRead = new GatewayHyperdriveRead(this.client, subdomain, headers[HTTP2_HEADER_PATH])
-      await driveRead.ready()
-      const stat = await driveRead.resolveFile()
-      stream.respond(this.constructor.fileResponseHeaders(driveRead.name, stat.size))
-      driveRead.createReadStream(headers[HTTP2_HEADER_SCHEME], domainHost).pipe(stream)
+      const gatewayDrive = this.cachedDrive(subdomain)
+      await gatewayDrive.ready()
+      const { name, stat } = await gatewayDrive.resolveFile(headers[HTTP2_HEADER_PATH])
+      stream.respond(this.constructor.fileResponseHeaders(name, stat.size))
+      gatewayDrive.createReadStream(name, headers[HTTP2_HEADER_SCHEME], domainHost).pipe(stream)
     } catch (error) {
       const notFound = error.code === 'ENOENT'
       console[notFound ? 'log' : 'error'](error)
