@@ -7,7 +7,7 @@ import { GatewayHyperspace } from '../../../services/gateway-hyperspace.js'
 import { HyperdriveController } from '../../../infra/controllers/hyperdrive.js'
 import { hexToBase32 } from '../../../lib/base32.js'
 import { buildDrive, mockConsoleLog, HYPERSPACE_OPTIONS } from '../../helpers.js'
-import { GatewayHyperdrive } from '../../../services/gateway-hyperdrive.js'
+import { HyperdriveManager } from '../../../services/hyperdrive-manager.js'
 
 const {
   HTTP2_HEADER_PATH,
@@ -33,7 +33,8 @@ describe('HyperdriveController', () => {
 
   beforeEach(() => {
     mockConsoleLog()
-    controller = new HyperdriveController({ client: hyperspace.client })
+    const driveManager = new HyperdriveManager({ client: hyperspace.client })
+    controller = new HyperdriveController({ driveManager })
   })
 
   describe('handleRequest', () => {
@@ -181,13 +182,6 @@ describe('HyperdriveController', () => {
         await controller.serveHyperdriveFile(stream, headers, driveBase32Key, 'test.com')
         assert.strictEqual(stream.respond.lastCall.args[0][':status'], HTTP_STATUS_NOT_FOUND)
       })
-    })
-  })
-
-  describe('cachedDrive', () => {
-    it('returns an instance of GatewayHyperdrive', () => {
-      const gatewayDrive = controller.cachedDrive(keyBase32)
-      assert(gatewayDrive instanceof GatewayHyperdrive)
     })
   })
 })

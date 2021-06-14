@@ -3,6 +3,7 @@ import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
 import { GatewayHyperspace } from './services/gateway-hyperspace.js'
+import { HyperdriveManager } from './services/hyperdrive-manager.js'
 import { HyperdriveController } from './infra/controllers/hyperdrive.js'
 import { ViewController } from './infra/controllers/view.js'
 import { Router } from './infra/router.js'
@@ -19,9 +20,13 @@ async function main () {
 
   await hyperspace.setup()
 
+  const driveManager = new HyperdriveManager({
+    client: hyperspace.client
+  })
+
   const router = new Router([
-    new HyperdriveController({ client: hyperspace.client }),
-    new ViewController(process.env.PUBLIC_ASSETS_DIRECTORY)
+    new HyperdriveController({ driveManager }),
+    new ViewController({ staticDir: process.env.PUBLIC_ASSETS_DIRECTORY })
   ])
 
   await router.initialize()

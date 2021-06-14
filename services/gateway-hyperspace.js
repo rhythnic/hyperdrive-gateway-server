@@ -6,20 +6,28 @@ import {
 export class GatewayHyperspace {
   constructor (opts = {}) {
     this.opts = opts
-    this.client = null
-    this.server = null
+    this._client = null
+    this._server = null
+  }
+
+  get client () {
+    return this._client
+  }
+
+  get server () {
+    return this._server
   }
 
   async setup () {
     const clientOpts = { host: this.opts.host }
     try {
-      this.client = new HyperspaceClient(clientOpts)
+      this._client = new HyperspaceClient(clientOpts)
       await this.client.ready()
     } catch (e) {
       // no daemon, start it in-process
-      this.server = new HyperspaceServer(this.opts)
+      this._server = new HyperspaceServer(this.opts)
       await this.server.ready()
-      this.client = new HyperspaceClient(clientOpts)
+      this._client = new HyperspaceClient(clientOpts)
       await this.client.ready()
     }
   }
