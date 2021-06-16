@@ -3,30 +3,22 @@ import assert from 'assert'
 import { GatewayHyperdrive, HYPER_URL_PATTERN } from '../../services/gateway-hyperdrive.js'
 import { GatewayHyperspace } from '../../services/gateway-hyperspace.js'
 import rawBody from 'raw-body'
-import { buildDrive, mockConsoleLog, HYPERSPACE_OPTIONS } from '../helpers.js'
+import { mockConsoleLog, HYPERSPACE_OPTIONS, MockDrives } from '../helpers.js'
 
 describe('GatewayHyperdrive', () => {
-  const key = '34f4c3f0bcf6bf5c39d7814d373946d8f04da5b4a525d940c98309cafb111d93'
+  let key
   let hyperspace
-  let mainDrive
-  let moduleDrive
-
-  const jsContent = 'console.log(\'TEST\')'
-  const svgContent = '<svg></svg>'
-
-  const indexHtmlContent = moduleDriveKey => `
-    <body>
-      <h1>Test</h1>
-      <script type="module" src="hyper://${moduleDriveKey}/index.js"></script>
-    </body>`
+  let appDrive
+  let jsModuleDrive
 
   before(async () => {
     hyperspace = new GatewayHyperspace(HYPERSPACE_OPTIONS)
     await hyperspace.setup()
-    moduleDrive = await buildDrive(hyperspace.client, '/index.js', jsContent)
-    const moduleDriveKey = moduleDrive.key.toString('hex')
-    mainDrive = await buildDrive(hyperspace.client, '/index.html', indexHtmlContent(moduleDriveKey))
-    await mainDrive.promises.writeFile('/logo.svg', svgContent)
+    const mockDrives = new MockDrives({ client: hyperspace.client })
+    const webAppDrives = await mockDrives.app({ mountModule: true })
+    appDrive = webAppDrives.appDrive
+    jsModuleDrive = webAppDrives.jsModuleDrive
+    key = appDrive.key.toString('hex')
   })
 
   after(() => hyperspace.cleanup())
@@ -55,9 +47,16 @@ describe('GatewayHyperdrive', () => {
   })
 
   describe('resolveFile', () => {
-    describe('file path exists', () => {
+    describe('file exists', () => {
       it('returns the stat object', async () => {
-        const { stat } = await GatewayHyperdrive.resolveFile(moduleDrive, '/index.js')
+        const { stat } = await GatewayHyperdrive.resolveFile(jsModuleDrive, '/index.js')
+        assert(stat.size)
+      })
+    })
+
+    describe('file exists in mounted drive', () => {
+      it('returns the stat object', async () => {
+        const { stat } = await GatewayHyperdrive.resolveFile(appDrive, '/jsModule/index.js')
         assert(stat.size)
       })
     })
@@ -65,14 +64,14 @@ describe('GatewayHyperdrive', () => {
     describe('file path does not exist', () => {
       describe('path has no extension', () => {
         it('returns `index.html` as name', async () => {
-          const { name } = await GatewayHyperdrive.resolveFile(mainDrive, '/foo')
+          const { name } = await GatewayHyperdrive.resolveFile(appDrive, '/foo')
           assert.strictEqual(name, '/index.html')
         })
 
         it('returns the stat of /index.html', async () => {
           const [{ stat: stat1 }, { stat: stat2 }] = await Promise.all([
-            GatewayHyperdrive.resolveFile(mainDrive, '/foo'),
-            GatewayHyperdrive.resolveFile(mainDrive, '/index.html')
+            GatewayHyperdrive.resolveFile(appDrive, '/foo'),
+            GatewayHyperdrive.resolveFile(appDrive, '/index.html')
           ])
           assert.strictEqual(stat1.size, stat2.size)
         })
@@ -80,7 +79,7 @@ describe('GatewayHyperdrive', () => {
 
       describe('path has extension', () => {
         it('throws an ENOENT error', async () => {
-          return GatewayHyperdrive.resolveFile(mainDrive, '/foo.js')
+          return GatewayHyperdrive.resolveFile(appDrive, '/foo.js')
             .then(
               () => { throw new Error('Did not throw') },
               err => assert(err.code === 'ENOENT')
@@ -95,8 +94,8 @@ describe('GatewayHyperdrive', () => {
       it('returns a stream for the hyperdrive file hyper links replaced with gateway links', async () => {
         const scheme = 'https'
         const host = 'test.com'
-        const gatewayDriveData = await rawBody(GatewayHyperdrive.createReadStream(moduleDrive, '/index.js', scheme, host), { encoding: 'utf-8' })
-        const driveData = await rawBody(moduleDrive.promises.createReadStream('/index.js'), { encoding: 'utf-8' })
+        const gatewayDriveData = await rawBody(GatewayHyperdrive.createReadStream(appDrive, '/jsModule/index.js', scheme, host), { encoding: 'utf-8' })
+        const driveData = await rawBody(jsModuleDrive.promises.createReadStream('/index.js'), { encoding: 'utf-8' })
         const dataTransformed = driveData.replace(
           new RegExp(HYPER_URL_PATTERN, 'gi'),
           (_, preceedingChar, key) => `${preceedingChar}${scheme}://${GatewayHyperdrive.hexToBase32(key)}.${host}`
@@ -107,8 +106,8 @@ describe('GatewayHyperdrive', () => {
 
     describe('file does not have web app code extension', () => {
       it('returns a read stream for the hyperdrive file', async () => {
-        const gatewayDriveData = await rawBody(GatewayHyperdrive.createReadStream(mainDrive, '/logo.svg', 'https', 'test.com'), { encoding: 'utf-8' })
-        const driveData = await rawBody(mainDrive.promises.createReadStream('/logo.svg'), { encoding: 'utf-8' })
+        const gatewayDriveData = await rawBody(GatewayHyperdrive.createReadStream(appDrive, '/logo.svg', 'https', 'test.com'), { encoding: 'utf-8' })
+        const driveData = await rawBody(appDrive.promises.createReadStream('/logo.svg'), { encoding: 'utf-8' })
         assert.strictEqual(gatewayDriveData, driveData)
       })
     })
