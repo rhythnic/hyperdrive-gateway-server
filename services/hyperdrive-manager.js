@@ -13,9 +13,8 @@ const FORGET_CONFIG = {
 }
 
 export class HyperdriveManager {
-  constructor ({ client, storage, cacheSize = 250 }) {
+  constructor ({ client, cacheSize = 250 }) {
     this.client = client
-    this.storage = storage
     this.cache = new QuickLRU({
       maxSize: cacheSize,
       onEviction: (_, drive) => {
@@ -36,6 +35,6 @@ export class HyperdriveManager {
 
   async destroy (drive) {
     await this.client.network.configure(drive.discoveryKey, FORGET_CONFIG)
-    // await drive.promises.destroyStorage()
+    await drive.close()
   }
 }

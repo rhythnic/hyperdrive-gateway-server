@@ -2,7 +2,7 @@ import Hyperdrive from 'hyperdrive'
 import simple from 'simple-mock'
 import process from 'process'
 import storage from 'random-access-memory'
-import crypto from 'hypercore-crypto'
+import hypercoreCrypto from 'hypercore-crypto'
 import { GatewayHyperdrive } from '../services/gateway-hyperdrive.js'
 
 export const HYPERSPACE_OPTIONS = {
@@ -25,7 +25,7 @@ export class MockDrives {
   }
 
   static generateKey () {
-    return crypto.keyPair().publicKey
+    return hypercoreCrypto.keyPair().publicKey
   }
 
   static generateBase32Key () {
@@ -33,7 +33,11 @@ export class MockDrives {
   }
 
   async build (name, content) {
-    const drive = new Hyperdrive(this.client.corestore())
+    const drive = new Hyperdrive(this.client.corestore(), null)
+    drive.on('error', err => {
+      console.error(err)
+      process.exit(1)
+    })
     await drive.promises.ready()
     if (name) await drive.promises.writeFile(name, content)
     return drive
