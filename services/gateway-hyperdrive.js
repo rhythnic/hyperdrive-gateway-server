@@ -1,4 +1,3 @@
-import Hyperdrive from 'hyperdrive'
 import { extname } from 'path'
 import replaceStream from 'replacestream'
 import { hexToBase32, base32ToBuffer, BASE32_PATTERN } from '../lib/base32.js'
@@ -14,67 +13,44 @@ const HYPER_URL_TRANSFORMER_CONFIG = {
   maxMatchLen: 73 // HYPER_URL_REGEX match length
 }
 
-const LOOKUP_CONFIG = {
-  announce: false,
-  lookup: true
-}
-
-const FORGET_CONFIG = {
-  announce: false,
-  lookup: false
-}
-
 export class GatewayHyperdrive {
-  static toBase32 (key) {
-    return hexToBase32(key)
+  static hexToBase32 (str) {
+    return hexToBase32(str)
   }
 
-  static base32KeyIsValid (key) {
+  static base32ToBuffer (str) {
+    return base32ToBuffer(str)
+  }
+
+  static isValidBase32Key (key) {
     return BASE32_KEY_REGEX.test(key)
   }
 
   static hyperUrlTransformer (scheme, host) {
     return replaceStream(
       HYPER_URL_REGEX,
-      (_, preceedingChar, key) => `${preceedingChar}${scheme}://${this.toBase32(key)}.${host}`,
+      (_, preceedingChar, key) => `${preceedingChar}${scheme}://${this.hexToBase32(key)}.${host}`,
       HYPER_URL_TRANSFORMER_CONFIG
     )
   }
 
-  constructor (client, base32Key) {
-    this.client = client
-    this.drive = new Hyperdrive(client.corestore(), base32ToBuffer(base32Key))
-    this.lastReadTime = 0
-  }
-
-  async ready () {
-    await this.drive.promises.ready()
-    await this.client.network.configure(this.drive.discoveryKey, LOOKUP_CONFIG)
-  }
-
-  async resolveFile (name) {
+  static async resolveFile (drive, name) {
     name = !name || name === '/' ? '/index.html' : name
     try {
-      const stat = await this.drive.promises.stat(name)
+      const stat = await drive.promises.stat(name)
       return { name, stat }
     } catch (error) {
       if (error.code !== 'ENOENT' || extname(name)) throw error
-      return this.resolveFile('/index.html')
+      return this.resolveFile(drive, '/index.html')
     }
   }
 
-  createReadStream (name, scheme, host) {
-    this.lastReadTime = Date.now()
-    const stream = this.drive.createReadStream(name)
+  static createReadStream (drive, name, scheme, host) {
+    const stream = drive.createReadStream(name)
     if (!WEB_APP_CODE_EXTENSIONS.includes(extname(name))) return stream
     if (!(scheme && host)) {
       throw new Error('createReadStream requires a scheme and host for .html .js and .css files')
     }
-    return stream.pipe(this.constructor.hyperUrlTransformer(scheme, host))
-  }
-
-  destroy () {
-    // Todo: remove hyperdrive from storage
-    return this.client.network.configure(this.drive.discoveryKey, FORGET_CONFIG)
+    return stream.pipe(this.hyperUrlTransformer(scheme, host))
   }
 }

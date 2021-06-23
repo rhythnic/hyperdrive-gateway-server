@@ -3,11 +3,11 @@ import assert from 'assert'
 import simple from 'simple-mock'
 import { constants as http2Constants } from 'http2'
 import { ObjectWritableMock } from 'stream-mock'
-import { GatewayHyperspace } from '../../../services/gateway-hyperspace.js'
 import { HyperdriveController } from '../../../infra/controllers/hyperdrive.js'
-import { hexToBase32 } from '../../../lib/base32.js'
-import { buildDrive, mockConsoleLog, HYPERSPACE_OPTIONS } from '../../helpers.js'
 import { GatewayHyperdrive } from '../../../services/gateway-hyperdrive.js'
+import { hexToBase32 } from '../../../lib/base32.js'
+import { MockDrives, mockConsoleLog, mockNetworkedCorestore } from '../../helpers.js'
+import { HyperdriveManager } from '../../../services/hyperdrive-manager.js'
 
 const {
   HTTP2_HEADER_PATH,
@@ -19,21 +19,23 @@ const {
 } = http2Constants
 
 describe('HyperdriveController', () => {
-  const key = '34f4c3f0bcf6bf5c39d7814d373946d8f04da5b4a525d940c98309cafb111d93'
-  const keyBase32 = '6KTC7W5WYTZNREEQG56KEEA6V3R4V9DMMMJXJG69GC4WNYRH3P9G'
-  let hyperspace
+  let keyHex
+  let keyBase32
+  let corestoreMocks
   let controller
 
   before(async () => {
-    hyperspace = new GatewayHyperspace(HYPERSPACE_OPTIONS)
-    await hyperspace.setup()
+    corestoreMocks = mockNetworkedCorestore()
+    await corestoreMocks.corestore.ready()
+    const key = MockDrives.generateKey()
+    keyHex = key.toString('hex')
+    keyBase32 = GatewayHyperdrive.hexToBase32(keyHex)
   })
-
-  after(() => hyperspace.cleanup())
 
   beforeEach(() => {
     mockConsoleLog()
-    controller = new HyperdriveController({ client: hyperspace.client })
+    const driveManager = new HyperdriveManager(corestoreMocks)
+    controller = new HyperdriveController({ driveManager })
   })
 
   describe('handleRequest', () => {
@@ -78,7 +80,7 @@ describe('HyperdriveController', () => {
 
         it('forwards the request to redirectRouteToSubdomain', () => {
           headers[HTTP2_HEADER_AUTHORITY] = 'test.com'
-          headers[HTTP2_HEADER_PATH] = `/hyper/${key}/foo.svg`
+          headers[HTTP2_HEADER_PATH] = `/hyper/${keyHex}/foo.svg`
           controller.handleRequest(stream, headers)
           const { args } = controller.constructor.redirectRouteToSubdomain.lastCall
           assert.deepStrictEqual(args, [stream, headers])
@@ -113,7 +115,7 @@ describe('HyperdriveController', () => {
         [HTTP2_HEADER_METHOD]: 'GET',
         [HTTP2_HEADER_SCHEME]: 'https',
         [HTTP2_HEADER_AUTHORITY]: 'test.com',
-        [HTTP2_HEADER_PATH]: `/hyper/${key}/foo.svg`
+        [HTTP2_HEADER_PATH]: `/hyper/${keyHex}/foo.svg`
       }
       stream = { end: simple.stub(), respond: simple.stub() }
     })
@@ -139,12 +141,12 @@ describe('HyperdriveController', () => {
   describe('serveHyperdriveFile', () => {
     let drive
     let driveBase32Key
-    const svgContent = '<svg></svg>'
     let headers
     let stream
 
     before(async () => {
-      drive = await buildDrive(hyperspace.client, '/foo.svg', svgContent)
+      const mockDrives = new MockDrives(corestoreMocks)
+      drive = await mockDrives.jsModule()
       driveBase32Key = hexToBase32(drive.key.toString('hex'))
     })
 
@@ -156,21 +158,24 @@ describe('HyperdriveController', () => {
 
     describe('file exists', () => {
       it('responds with file content in body of response', done => {
-        headers[HTTP2_HEADER_PATH] = '/foo.svg'
+        headers[HTTP2_HEADER_PATH] = '/index.js'
         stream.on('finish', () => {
-          assert.strictEqual(stream.data.toString('utf-8'), svgContent)
-          done()
+          drive.readFile('/index.js', { encoding: 'utf-8' }, (err, indexJsContent) => {
+            if (err) return done(err)
+            assert.strictEqual(stream.data.toString('utf-8'), indexJsContent)
+            done()
+          })
         })
         controller.serveHyperdriveFile(stream, headers, driveBase32Key, 'test.com').catch(done)
       })
 
       it('responds with the expected headers', async () => {
-        headers[HTTP2_HEADER_PATH] = '/foo.svg'
+        headers[HTTP2_HEADER_PATH] = '/index.js'
         await controller.serveHyperdriveFile(stream, headers, driveBase32Key, 'test.com')
-        const stat = await drive.promises.stat('/foo.svg')
+        const stat = await drive.promises.stat('/index.js')
         assert.deepStrictEqual(
           stream.respond.lastCall.args[0],
-          HyperdriveController.fileResponseHeaders('/foo.svg', stat.size)
+          HyperdriveController.fileResponseHeaders('/index.js', stat.size)
         )
       })
     })
@@ -181,13 +186,6 @@ describe('HyperdriveController', () => {
         await controller.serveHyperdriveFile(stream, headers, driveBase32Key, 'test.com')
         assert.strictEqual(stream.respond.lastCall.args[0][':status'], HTTP_STATUS_NOT_FOUND)
       })
-    })
-  })
-
-  describe('cachedDrive', () => {
-    it('returns an instance of GatewayHyperdrive', () => {
-      const gatewayDrive = controller.cachedDrive(keyBase32)
-      assert(gatewayDrive instanceof GatewayHyperdrive)
     })
   })
 })

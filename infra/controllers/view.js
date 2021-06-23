@@ -12,7 +12,7 @@ const {
 } = http2Constants
 
 export class ViewController {
-  constructor (staticDir) {
+  constructor ({ staticDir }) {
     this.staticDir = staticDir
     this.canServeStatic = false
   }

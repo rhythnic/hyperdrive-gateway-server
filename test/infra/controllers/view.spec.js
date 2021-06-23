@@ -17,11 +17,11 @@ const {
 
 describe('ViewController', () => {
   let controller
-  const publicDir = tmpdir()
+  const staticDir = tmpdir()
 
   beforeEach(async () => {
     mockConsoleLog()
-    controller = new ViewController(publicDir)
+    controller = new ViewController({ staticDir })
     await controller.initialize()
   })
 
@@ -70,7 +70,7 @@ describe('ViewController', () => {
         headers[HTTP2_HEADER_PATH] = '/foo'
         await controller.serveStaticAsset(stream, headers)
         const { args } = stream.respondWithFile.lastCall
-        assert.strictEqual(args[0], `${publicDir}/index.html`)
+        assert.strictEqual(args[0], `${staticDir}/index.html`)
       })
     })
 
@@ -80,7 +80,7 @@ describe('ViewController', () => {
           headers[HTTP2_HEADER_PATH] = '/foo.svg'
           await controller.serveStaticAsset(stream, headers)
           const { args } = stream.respondWithFile.lastCall
-          assert.strictEqual(args[0], `${publicDir}/foo.svg`)
+          assert.strictEqual(args[0], `${staticDir}/foo.svg`)
         })
       })
 

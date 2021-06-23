@@ -2,26 +2,26 @@ import { createSecureServer } from 'http2'
 import process from 'process'
 import { readFileSync } from 'fs'
 import { promisify } from 'util'
-import { GatewayHyperspace } from './services/gateway-hyperspace.js'
+import Corestore from 'corestore'
+import Networker from '@corestore/networker'
+import { HyperdriveManager } from './services/hyperdrive-manager.js'
 import { HyperdriveController } from './infra/controllers/hyperdrive.js'
 import { ViewController } from './infra/controllers/view.js'
 import { Router } from './infra/router.js'
 
 async function main () {
-  const hyperspace = new GatewayHyperspace({
-    host: `gateway-${process.pid}`,
-    storage: process.env.HYPERSPACE_STORAGE,
-    noAnnounce: true,
-    network: {
-      ephemeral: false
-    }
+  const corestore = new Corestore(process.env.CORE_STORAGE)
+  await corestore.ready()
+  const networker = new Networker(corestore)
+
+  const driveManager = new HyperdriveManager({
+    corestore,
+    networker
   })
 
-  await hyperspace.setup()
-
   const router = new Router([
-    new HyperdriveController({ client: hyperspace.client }),
-    new ViewController(process.env.PUBLIC_ASSETS_DIRECTORY)
+    new HyperdriveController({ driveManager }),
+    new ViewController({ staticDir: process.env.PUBLIC_ASSETS_DIRECTORY })
   ])
 
   await router.initialize()
@@ -38,7 +38,7 @@ async function main () {
   const shutdown = () =>
     Promise.all([
       promisify(server.close.bind(server)),
-      hyperspace.cleanup()
+      networker.close()
     ])
       .then(() => process.exit(0))
       .catch(err => {
