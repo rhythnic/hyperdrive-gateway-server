@@ -1,16 +1,18 @@
 import Hyperdrive from 'hyperdrive'
 import simple from 'simple-mock'
 import process from 'process'
-import storage from 'random-access-memory'
+import ramStorage from 'random-access-memory'
 import hypercoreCrypto from 'hypercore-crypto'
 import { GatewayHyperdrive } from '../services/gateway-hyperdrive.js'
+import Corestore from 'corestore'
 
-export const HYPERSPACE_OPTIONS = {
-  storage,
-  host: `hyperspace-${process.pid}`,
-  noAnnounce: true,
-  network: {
-    ephemeral: true
+export function mockNetworkedCorestore (storage = ramStorage) {
+  const corestore = new Corestore(storage)
+  return {
+    corestore,
+    networker: {
+      configure: simple.stub()
+    }
   }
 }
 
@@ -20,8 +22,8 @@ export function mockConsoleLog () {
 }
 
 export class MockDrives {
-  constructor ({ client }) {
-    this.client = client
+  constructor ({ corestore }) {
+    this.corestore = corestore
   }
 
   static generateKey () {
@@ -33,7 +35,7 @@ export class MockDrives {
   }
 
   async build (name, content) {
-    const drive = new Hyperdrive(this.client.corestore(), null)
+    const drive = new Hyperdrive(this.corestore, null)
     drive.on('error', err => {
       console.error(err)
       process.exit(1)

@@ -13,8 +13,9 @@ const FORGET_CONFIG = {
 }
 
 export class HyperdriveManager {
-  constructor ({ client, cacheSize = 250 }) {
-    this.client = client
+  constructor ({ corestore, networker, cacheSize = 250 }) {
+    this.corestore = corestore
+    this.networker = networker
     this.cache = new QuickLRU({
       maxSize: cacheSize,
       onEviction: (_, drive) => {
@@ -25,16 +26,16 @@ export class HyperdriveManager {
 
   async create (base32Key) {
     if (!this.cache.has(base32Key)) {
-      const drive = new Hyperdrive(this.client.corestore(), GatewayHyperdrive.base32ToBuffer(base32Key))
+      const drive = new Hyperdrive(this.corestore, GatewayHyperdrive.base32ToBuffer(base32Key))
       await drive.promises.ready()
-      await this.client.network.configure(drive.discoveryKey, LOOKUP_CONFIG)
+      await this.networker.configure(drive.discoveryKey, LOOKUP_CONFIG)
       this.cache.set(base32Key, drive)
     }
     return this.cache.get(base32Key)
   }
 
   async destroy (drive) {
-    await this.client.network.configure(drive.discoveryKey, FORGET_CONFIG)
+    await this.networker.configure(drive.discoveryKey, FORGET_CONFIG)
     await drive.close()
   }
 }

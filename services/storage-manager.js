@@ -1,3 +1,5 @@
+// not used currently
+// might be used in the future when removing storage is supported
 import { readdir } from 'fs/promises'
 import { join as joinPath } from 'path'
 import { PUBLIC_KEY_PATTERN } from './gateway-hyperdrive.js'
@@ -22,8 +24,4 @@ export class StorageManager {
     )
     return index
   }
-
-  // static async pruneHypercoresFromStorage (dir, driveCache) {
-  //   const coreReferenceCounts = this.coreIndex(dir)
-  // }
 }

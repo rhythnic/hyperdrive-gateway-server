@@ -1,27 +1,24 @@
 /* eslint-env mocha */
 import assert from 'assert'
 import { GatewayHyperdrive, HYPER_URL_PATTERN } from '../../services/gateway-hyperdrive.js'
-import { GatewayHyperspace } from '../../services/gateway-hyperspace.js'
 import rawBody from 'raw-body'
-import { mockConsoleLog, HYPERSPACE_OPTIONS, MockDrives } from '../helpers.js'
+import { mockConsoleLog, mockNetworkedCorestore, MockDrives } from '../helpers.js'
 
 describe('GatewayHyperdrive', () => {
   let key
-  let hyperspace
+  let corestoreMocks
   let appDrive
   let jsModuleDrive
 
   before(async () => {
-    hyperspace = new GatewayHyperspace(HYPERSPACE_OPTIONS)
-    await hyperspace.setup()
-    const mockDrives = new MockDrives({ client: hyperspace.client })
+    corestoreMocks = mockNetworkedCorestore()
+    await corestoreMocks.corestore.ready()
+    const mockDrives = new MockDrives(corestoreMocks)
     const webAppDrives = await mockDrives.app({ mountModule: true })
     appDrive = webAppDrives.appDrive
     jsModuleDrive = webAppDrives.jsModuleDrive
     key = appDrive.key.toString('hex')
   })
-
-  after(() => hyperspace.cleanup())
 
   beforeEach(() => {
     mockConsoleLog()

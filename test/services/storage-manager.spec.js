@@ -3,25 +3,23 @@ import assert from 'assert'
 import { tmpdir } from 'os'
 import fs from 'fs'
 import { join as joinPath } from 'path'
-import { MockDrives, HYPERSPACE_OPTIONS } from '../helpers.js'
+import { MockDrives, mockNetworkedCorestore } from '../helpers.js'
 import { StorageManager } from '../../services/storage-manager.js'
-import { GatewayHyperspace } from '../../services/gateway-hyperspace.js'
 
 describe('StorageManager', () => {
-  let hyperspace
+  let corestoreMocks
   let mockDrives
   const storage = joinPath(tmpdir(), 'storage-manager-test')
 
   before(async () => {
     if (!fs.existsSync(storage)) fs.mkdirSync(storage)
-    hyperspace = new GatewayHyperspace({ ...HYPERSPACE_OPTIONS, storage })
-    await hyperspace.setup()
-    mockDrives = new MockDrives({ client: hyperspace.client })
+    corestoreMocks = mockNetworkedCorestore(storage)
+    await corestoreMocks.corestore.ready()
+    mockDrives = new MockDrives(corestoreMocks)
   })
 
   after(async () => {
     await fs.promises.rm(storage, { recursive: true, force: true })
-    await hyperspace.cleanup()
   })
 
   describe('coreIndex', () => {

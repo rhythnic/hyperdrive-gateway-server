@@ -3,11 +3,10 @@ import assert from 'assert'
 import simple from 'simple-mock'
 import { constants as http2Constants } from 'http2'
 import { ObjectWritableMock } from 'stream-mock'
-import { GatewayHyperspace } from '../../../services/gateway-hyperspace.js'
 import { HyperdriveController } from '../../../infra/controllers/hyperdrive.js'
 import { GatewayHyperdrive } from '../../../services/gateway-hyperdrive.js'
 import { hexToBase32 } from '../../../lib/base32.js'
-import { MockDrives, mockConsoleLog, HYPERSPACE_OPTIONS } from '../../helpers.js'
+import { MockDrives, mockConsoleLog, mockNetworkedCorestore } from '../../helpers.js'
 import { HyperdriveManager } from '../../../services/hyperdrive-manager.js'
 
 const {
@@ -22,22 +21,20 @@ const {
 describe('HyperdriveController', () => {
   let keyHex
   let keyBase32
-  let hyperspace
+  let corestoreMocks
   let controller
 
   before(async () => {
-    hyperspace = new GatewayHyperspace(HYPERSPACE_OPTIONS)
-    await hyperspace.setup()
+    corestoreMocks = mockNetworkedCorestore()
+    await corestoreMocks.corestore.ready()
     const key = MockDrives.generateKey()
     keyHex = key.toString('hex')
     keyBase32 = GatewayHyperdrive.hexToBase32(keyHex)
   })
 
-  after(() => hyperspace.cleanup())
-
   beforeEach(() => {
     mockConsoleLog()
-    const driveManager = new HyperdriveManager({ client: hyperspace.client })
+    const driveManager = new HyperdriveManager(corestoreMocks)
     controller = new HyperdriveController({ driveManager })
   })
 
@@ -148,7 +145,7 @@ describe('HyperdriveController', () => {
     let stream
 
     before(async () => {
-      const mockDrives = new MockDrives({ client: hyperspace.client })
+      const mockDrives = new MockDrives(corestoreMocks)
       drive = await mockDrives.jsModule()
       driveBase32Key = hexToBase32(drive.key.toString('hex'))
     })

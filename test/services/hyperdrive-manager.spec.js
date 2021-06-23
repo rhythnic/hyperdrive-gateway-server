@@ -2,23 +2,17 @@
 import assert from 'assert'
 import Hyperdrive from 'hyperdrive'
 import simple from 'simple-mock'
-import { mockConsoleLog, HYPERSPACE_OPTIONS, MockDrives } from '../helpers.js'
+import { mockConsoleLog, mockNetworkedCorestore, MockDrives } from '../helpers.js'
 import { HyperdriveManager } from '../../services/hyperdrive-manager.js'
-import { GatewayHyperspace } from '../../services/gateway-hyperspace.js'
 import { GatewayHyperdrive } from '../../services/gateway-hyperdrive.js'
 
 describe('HyperdriveManager', () => {
-  let hyperspace
+  let corestoreMocks
   let driveManager
 
   before(async () => {
-    hyperspace = new GatewayHyperspace(HYPERSPACE_OPTIONS)
-    await hyperspace.setup()
-  })
-
-  after(() => hyperspace.cleanup())
-
-  beforeEach(() => {
+    corestoreMocks = mockNetworkedCorestore()
+    await corestoreMocks.corestore.ready()
     mockConsoleLog()
   })
 
@@ -26,7 +20,7 @@ describe('HyperdriveManager', () => {
     let base32Key
 
     before(() => {
-      driveManager = new HyperdriveManager({ client: hyperspace.client })
+      driveManager = new HyperdriveManager(corestoreMocks)
       base32Key = MockDrives.generateBase32Key()
     })
 
@@ -46,8 +40,8 @@ describe('HyperdriveManager', () => {
     let appDrive
 
     beforeEach(async () => {
-      driveManager = new HyperdriveManager({ client: hyperspace.client, cacheSize: 1 })
-      const mockDrives = new MockDrives({ client: hyperspace.client })
+      driveManager = new HyperdriveManager({ ...corestoreMocks, cacheSize: 1 })
+      const mockDrives = new MockDrives(corestoreMocks)
       const appDrives = await mockDrives.app()
       appDrive = appDrives.appDrive
     })

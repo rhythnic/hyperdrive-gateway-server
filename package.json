@@ -21,11 +21,12 @@
   },
   "homepage": "https://github.com/rhythnic/hyperdrive-gateway-server",
   "dependencies": {
+    "@corestore/networker": "^1.1.0",
     "base32-decode": "^1.0.0",
     "base32-encode": "^1.2.0",
+    "corestore": "^5.8.2",
     "hyperbee": "^1.5.5",
     "hyperdrive": "^10.20.0",
-    "hyperspace": "^3.19.0",
     "mime-types": "^2.1.30",
     "quick-lru": "^6.0.0",
     "replacestream": "^4.0.3"
